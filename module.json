@@ -9,6 +9,7 @@
   "author_email": "support@erplora.com",
   "license": "MIT",
   "category": "pos",
+  "tags": ["pos", "sales", "point-of-sale", "retail", "transactions", "payments", "checkout"],
   "icon": "cart-outline",
 
   "dependencies": {
