@@ -1,0 +1,1248 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Point of Sale" %} - ERPlora{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Sales Cart Menu in Split Pane - Override ALL global menu widths */
+    ion-menu#sales-cart-menu[menu-id="sales-cart-menu"],
+    ion-menu[id="sales-cart-menu"],
+    #sales-cart-menu {
+        --width: 100vw !important;
+        --max-width: 100vw !important;
+    }
+
+    /* Split Pane for Sales View */
+    ion-split-pane {
+        --side-width: 420px;
+        --side-min-width: 320px;
+        --side-max-width: 420px;
+    }
+
+    /* Category tabs */
+    .category-tabs {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+        margin-top: 1rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Hide scrollbar on category tabs */
+    .category-tabs::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* Responsive utility classes */
+    @media (min-width: 1024px) {
+        .lg\:block {
+            display: block !important;
+        }
+
+        .lg\:hidden {
+            display: none !important;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        .lg\:hidden {
+            display: block !important;
+        }
+    }
+
+    .back-button-padding {
+        padding-top: 60%;
+    }
+
+    @media (min-width: 768px) {
+        .back-button-padding {
+            padding-top: 45%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div x-data="posApp()" x-init="init()">
+    <ion-split-pane content-id="sales-content" when="lg">
+        <!-- Main Sales Content -->
+        <div class="ion-page split-pane-main" id="sales-content">
+            <!-- Custom Sales Topbar -->
+            <ion-toolbar>
+                <ion-buttons slot="start">
+                    <ion-button @click="goBack()" fill="clear" class="back-button-padding">
+                        <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+                    </ion-button>
+                </ion-buttons>
+                <ion-buttons slot="end" class="mr-2">
+                    <ion-button @click="toggleFullscreen()" fill="clear">
+                        <ion-icon slot="icon-only" :name="isFullscreen ? 'contract-outline' : 'expand-outline'"></ion-icon>
+                    </ion-button>
+                </ion-buttons>
+                <div class="flex gap-4 items-center p-4">
+                    <!-- Search Bar -->
+                    <ion-searchbar
+                        :value="searchQuery"
+                        @ionInput="searchQuery = $event.target.value; filterProducts()"
+                        placeholder="{% trans "Search products..." %}"
+                        class="flex-1 p-0">
+                    </ion-searchbar>
+
+                    <!-- Cart Button (Mobile Only) -->
+                    <ion-button @click="toggleCartMenu()" size="large" class="lg:hidden relative" color="primary">
+                        <ion-icon slot="start" name="cart-outline"></ion-icon>
+                        <span x-text="'{% trans "Cart" %} (' + cartItems.length + ')'"></span>
+                        <ion-badge x-show="cartItems.length > 0" color="danger" class="absolute -top-1 -right-1">
+                            <span x-text="cartItems.length"></span>
+                        </ion-badge>
+                    </ion-button>
+                </div>
+
+                <!-- Category Tabs -->
+                <div class="category-tabs px-4">
+                    <ion-chip @click="selectedCategory = ''; filterProducts()" :color="selectedCategory === '' ? 'primary' : 'medium'" class="cursor-pointer shrink-0">
+                        <ion-icon name="apps-outline" class="mr-1"></ion-icon>
+                        <ion-label>{% trans "All" %}</ion-label>
+                    </ion-chip>
+                    {% for category in categories %}
+                    <ion-chip @click="selectedCategory = '{{ category.id }}'; filterProducts()" :color="selectedCategory === '{{ category.id }}' ? 'primary' : 'medium'" class="cursor-pointer shrink-0">
+                        <ion-icon name="{{ category.icon }}" class="mr-1"></ion-icon>
+                        <ion-label>{{ category.name }}</ion-label>
+                    </ion-chip>
+                    {% endfor %}
+                </div>
+            </ion-toolbar>
+
+            <!-- Products Grid -->
+            <ion-content class="p-4">
+                <ion-grid>
+                    <ion-row>
+                        <template x-for="product in filteredProducts" :key="product.id">
+                            <ion-col size="6" size-sm="4" size-md="3" size-lg="2">
+                                <ion-card @click="addToCart(product)" button class="m-0 cursor-pointer transition-transform hover:scale-105" :class="product.stock === 0 ? 'opacity-50' : ''" :disabled="product.stock === 0">
+                                    <div class="relative h-32 bg-gray-100 dark:bg-gray-800 overflow-hidden">
+                                        <template x-if="product.image">
+                                            <img :src="product.image" :alt="product.name" class="w-full h-full object-cover">
+                                        </template>
+                                        <template x-if="!product.image">
+                                            <div class="flex items-center justify-center h-full">
+                                                <ion-icon name="cube-outline" class="text-5xl text-gray-400"></ion-icon>
+                                            </div>
+                                        </template>
+                                        <ion-badge x-show="product.stock === 0" color="danger" class="absolute top-2 right-2">
+                                            {% trans "Out of Stock" %}
+                                        </ion-badge>
+                                    </div>
+                                    <ion-card-content class="p-3">
+                                        <ion-text class="text-sm font-medium truncate block mb-1" x-text="product.name"></ion-text>
+                                        <ion-text color="primary" class="font-semibold" x-text="'$' + product.price.toFixed(2)"></ion-text>
+                                    </ion-card-content>
+                                </ion-card>
+                            </ion-col>
+                        </template>
+                    </ion-row>
+                </ion-grid>
+
+                <!-- Empty State -->
+                <div x-show="filteredProducts.length === 0" class="text-center py-12 px-4">
+                    <ion-icon name="search-outline" class="text-6xl text-gray-400 mb-4"></ion-icon>
+                    <ion-text color="medium">
+                        <p>{% trans "No products found" %}</p>
+                    </ion-text>
+                </div>
+            </ion-content>
+        </div>
+
+        <!-- Cart Menu as Side Panel in Split Pane -->
+        <ion-menu id="sales-cart-menu" content-id="sales-content" menu-id="sales-cart-menu" type="overlay" side="end" class="split-pane-side">
+            <ion-header>
+                <ion-toolbar>
+                    <ion-buttons slot="start" class="lg:hidden">
+                        <ion-button @click="closeCartMenu()">
+                            <ion-icon slot="icon-only" name="arrow-back-outline"></ion-icon>
+                        </ion-button>
+                    </ion-buttons>
+                    <ion-title>{% trans "Cart" %}</ion-title>
+                    <ion-buttons slot="end">
+                        <ion-button @click="showParkedTicketsModal = true" class="relative">
+                            <ion-icon slot="icon-only" name="file-tray-outline"></ion-icon>
+                            <ion-badge x-show="parkedTickets.length > 0" color="warning" class="absolute -top-1 -right-1" style="font-size: 10px; min-width: 16px; height: 16px;">
+                                <span x-text="parkedTickets.length"></span>
+                            </ion-badge>
+                        </ion-button>
+                    </ion-buttons>
+                </ion-toolbar>
+            </ion-header>
+
+            <ion-content>
+                <!-- Empty State -->
+                <div x-show="cartItems.length === 0" class="flex flex-col items-center justify-center h-full p-8 text-center">
+                    <ion-icon name="cart-outline" class="text-6xl text-gray-400 mb-4"></ion-icon>
+                    <ion-text color="medium">
+                        <p>{% trans "No items in cart" %}</p>
+                        <p class="text-sm">{% trans "Select products to add them" %}</p>
+                    </ion-text>
+                </div>
+
+                <!-- Cart Items -->
+                <ion-list x-show="cartItems.length > 0" class="p-4">
+                    <template x-for="(item, index) in cartItems" :key="index">
+                        <ion-item class="mb-4" lines="none">
+                            <div class="flex gap-4 w-full items-center">
+                                <template x-if="item.image">
+                                    <img :src="item.image" :alt="item.name" class="w-16 h-16 object-cover rounded-lg">
+                                </template>
+                                <template x-if="!item.image">
+                                    <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center justify-center">
+                                        <ion-icon name="cube-outline" class="text-2xl text-gray-400"></ion-icon>
+                                    </div>
+                                </template>
+                                <div class="flex-1">
+                                    <ion-text class="font-medium block mb-1" x-text="item.name"></ion-text>
+                                    <ion-text color="primary" class="font-semibold" x-text="'$' + item.price.toFixed(2)"></ion-text>
+                                    <div class="flex items-center gap-2 mt-2">
+                                        <ion-button size="large" fill="outline" @click="decreaseQuantity(index)">
+                                            <ion-icon slot="icon-only" name="remove-outline"></ion-icon>
+                                        </ion-button>
+                                        <ion-text class="min-w-8 text-center" x-text="item.quantity"></ion-text>
+                                        <ion-button size="large" fill="outline" @click="increaseQuantity(index)">
+                                            <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+                                        </ion-button>
+                                        <ion-button size="large" fill="clear" color="danger" @click="removeFromCart(index)" class="ml-auto">
+                                            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                                        </ion-button>
+                                    </div>
+                                </div>
+                            </div>
+                        </ion-item>
+                    </template>
+                </ion-list>
+            </ion-content>
+
+            <!-- Footer with Total and Actions -->
+            <ion-footer x-show="cartItems.length > 0">
+                <ion-toolbar class="p-4">
+                    <div class="space-y-3">
+                        <!-- Payment Method Buttons -->
+                        <ion-grid class="p-0">
+                            <ion-row>
+                                <ion-col size="6">
+                                    <ion-button expand="block" :fill="paymentMethod === 'cash' ? 'solid' : 'outline'" @click="paymentMethod = 'cash'">
+                                        <ion-icon slot="start" name="cash-outline"></ion-icon>
+                                        {% trans "Cash" %}
+                                    </ion-button>
+                                </ion-col>
+                                <ion-col size="6">
+                                    <ion-button expand="block" :fill="paymentMethod === 'card' ? 'solid' : 'outline'" @click="paymentMethod = 'card'">
+                                        <ion-icon slot="start" name="card-outline"></ion-icon>
+                                        {% trans "Card" %}
+                                    </ion-button>
+                                </ion-col>
+                            </ion-row>
+                        </ion-grid>
+
+                        <!-- Action Buttons -->
+                        <ion-grid class="p-0">
+                            <ion-row>
+                                <ion-col size="4">
+                                    <ion-button expand="block" fill="outline" @click="showParkedTicketsModal = true">
+                                        <ion-icon slot="start" name="list-outline"></ion-icon>
+                                        {% trans "Parked" %}
+                                    </ion-button>
+                                </ion-col>
+                                <ion-col size="4">
+                                    <ion-button expand="block" fill="outline" @click="parkCurrentTicket()">
+                                        <ion-icon slot="start" name="pause-outline"></ion-icon>
+                                        {% trans "Park" %}
+                                    </ion-button>
+                                </ion-col>
+                                <ion-col size="4">
+                                    <ion-button expand="block" fill="outline" @click="clearCart()">
+                                        <ion-icon slot="start" name="trash-outline"></ion-icon>
+                                        {% trans "Clear" %}
+                                    </ion-button>
+                                </ion-col>
+                            </ion-row>
+                        </ion-grid>
+
+                        <!-- Total -->
+                        <ion-card color="secondary" class="m-0">
+                            <ion-card-content class="flex justify-between items-center">
+                                <ion-text class="text-lg font-semibold">{% trans "Total:" %}</ion-text>
+                                <ion-text color="primary" class="text-2xl font-bold" x-text="'$' + cartTotal.toFixed(2)"></ion-text>
+                            </ion-card-content>
+                        </ion-card>
+
+                        <!-- Print Delivery Note Button -->
+                        <ion-button expand="block" size="large" fill="outline" @click="printDeliveryNote()">
+                            <ion-icon slot="start" name="print-outline"></ion-icon>
+                            {% trans "Print Delivery Note" %}
+                        </ion-button>
+
+                        <!-- Pay Button -->
+                        <ion-button expand="block" size="large" @click="checkout()">
+                            <ion-icon slot="start" name="card-outline"></ion-icon>
+                            {% trans "Pay" %} - <span x-text="'$' + cartTotal.toFixed(2)"></span>
+                        </ion-button>
+                    </div>
+                </ion-toolbar>
+            </ion-footer>
+        </ion-menu>
+    </ion-split-pane>
+
+    <!-- Checkout Modal -->
+    <ion-modal :is-open="showCheckoutModal" @didDismiss="showCheckoutModal = false">
+    <ion-header>
+        <ion-toolbar>
+            <ion-title>{% trans "Checkout" %}</ion-title>
+            <ion-buttons slot="end">
+                <ion-button @click="showCheckoutModal = false">
+                    <ion-icon slot="icon-only" name="close"></ion-icon>
+                </ion-button>
+            </ion-buttons>
+        </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+        <div style="max-width: 500px; margin: 0 auto;">
+            <!-- Payment Method -->
+            <div style="margin-bottom: 24px;">
+                <ion-label position="stacked">{% trans "Payment Method" %}</ion-label>
+                <ion-segment x-model="paymentMethod">
+                    <ion-segment-button value="cash">
+                        <ion-label>{% trans "Cash" %}</ion-label>
+                    </ion-segment-button>
+                    <ion-segment-button value="card">
+                        <ion-label>{% trans "Card" %}</ion-label>
+                    </ion-segment-button>
+                    <ion-segment-button value="transfer">
+                        <ion-label>{% trans "Transfer" %}</ion-label>
+                    </ion-segment-button>
+                </ion-segment>
+            </div>
+
+            <!-- Total -->
+            <ion-card>
+                <ion-card-content>
+                    <div style="display: flex; justify-content: space-between; font-weight: 600; font-size: 24px;">
+                        <span>{% trans "Total:" %}</span>
+                        <span x-text="'$' + cartTotal.toFixed(2)"></span>
+                    </div>
+                </ion-card-content>
+            </ion-card>
+
+            <!-- Amount Paid (only for cash) -->
+            <div x-show="paymentMethod === 'cash'" style="margin-top: 16px;">
+                <ion-item>
+                    <ion-label position="stacked">{% trans "Amount Paid" %}</ion-label>
+                    <ion-input
+                        type="number"
+                        step="0.01"
+                        x-model="amountPaid"
+                        placeholder="0.00">
+                    </ion-input>
+                </ion-item>
+                <div x-show="change > 0" style="margin-top: 16px; padding: 16px; background: var(--ion-color-success); color: white; border-radius: 8px;">
+                    <div style="font-size: 14px;">{% trans "Change:" %}</div>
+                    <div style="font-size: 32px; font-weight: 600;" x-text="'$' + change.toFixed(2)"></div>
+                </div>
+            </div>
+
+            <!-- Customer Name (optional) -->
+            <div style="margin-top: 16px;">
+                <ion-item>
+                    <ion-label position="stacked">{% trans "Customer Name (optional)" %}</ion-label>
+                    <ion-input x-model="customerName" placeholder="{% trans "John Doe" %}"></ion-input>
+                </ion-item>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="margin-top: 24px; display: flex; gap: 12px;">
+                <!-- Print & Pay Button -->
+                <ion-button
+                    expand="block"
+                    size="large"
+                    color="primary"
+                    @click="completeSaleAndPrint()"
+                    :disabled="processing || (paymentMethod === 'cash' && parseFloat(amountPaid) < cartTotal)"
+                    style="flex: 1;">
+                    <ion-icon slot="start" name="print-outline"></ion-icon>
+                    <ion-icon slot="start" name="card-outline"></ion-icon>
+                    <span x-text="processing ? '{% trans "Processing..." %}' : '{% trans "Print & Pay" %}'"></span>
+                </ion-button>
+
+                <!-- Just Pay Button -->
+                <ion-button
+                    expand="block"
+                    size="large"
+                    fill="outline"
+                    @click="completeSale()"
+                    :disabled="processing || (paymentMethod === 'cash' && parseFloat(amountPaid) < cartTotal)"
+                    style="flex: 1;">
+                    <ion-icon slot="start" name="card-outline"></ion-icon>
+                    <span x-text="processing ? '{% trans "Processing..." %}' : '{% trans "Pay" %}'"></span>
+                </ion-button>
+            </div>
+        </div>
+    </ion-content>
+</ion-modal>
+
+<!-- Parked Tickets Modal -->
+<ion-modal :is-open="showParkedTicketsModal" @didDismiss="showParkedTicketsModal = false">
+    <ion-header>
+        <ion-toolbar>
+            <ion-title>{% trans "Parked Tickets" %}</ion-title>
+            <ion-buttons slot="end">
+                <ion-button @click="showParkedTicketsModal = false">
+                    <ion-icon slot="icon-only" name="close"></ion-icon>
+                </ion-button>
+            </ion-buttons>
+        </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+        <!-- Loading State -->
+        <div x-show="loadingParkedTickets" class="text-center py-8">
+            <ion-spinner></ion-spinner>
+            <p class="mt-2 text-medium">{% trans "Loading parked tickets..." %}</p>
+        </div>
+
+        <!-- Empty State -->
+        <div x-show="!loadingParkedTickets && parkedTickets.length === 0" class="flex flex-col items-center justify-center py-12">
+            <ion-icon name="file-tray-outline" class="text-6xl text-gray-400 mb-4"></ion-icon>
+            <ion-text color="medium">
+                <p>{% trans "No parked tickets" %}</p>
+                <p class="text-sm">{% trans "Park a ticket to save it for later" %}</p>
+            </ion-text>
+        </div>
+
+        <!-- Parked Tickets List -->
+        <ion-list x-show="!loadingParkedTickets && parkedTickets.length > 0">
+            <template x-for="ticket in parkedTickets" :key="ticket.id">
+                <ion-item button @click="recoverParkedTicket(ticket.id)" lines="full">
+                    <div class="w-full py-2">
+                        <div class="flex justify-between items-start mb-2">
+                            <div>
+                                <ion-text class="font-semibold block" x-text="ticket.ticket_number"></ion-text>
+                                <ion-text color="medium" class="text-sm" x-text="ticket.employee_name"></ion-text>
+                            </div>
+                            <ion-chip color="primary" class="m-0">
+                                <ion-label x-text="ticket.item_count + ' items'"></ion-label>
+                            </ion-chip>
+                        </div>
+                        <div class="flex justify-between items-center mt-2">
+                            <ion-text color="medium" class="text-sm">
+                                <ion-icon name="time-outline" class="align-middle"></ion-icon>
+                                <span x-text="ticket.age_hours + 'h ago'"></span>
+                            </ion-text>
+                            <template x-if="ticket.notes">
+                                <ion-text color="medium" class="text-sm italic" x-text="ticket.notes"></ion-text>
+                            </template>
+                        </div>
+                    </div>
+                </ion-item>
+            </template>
+        </ion-list>
+    </ion-content>
+</ion-modal>
+
+<!-- Print Preview Modal -->
+<ion-modal :is-open="showPrintModal" @didDismiss="showPrintModal = false">
+    <ion-header>
+        <ion-toolbar>
+            <ion-title>{% trans "Print Preview" %}</ion-title>
+            <ion-buttons slot="end">
+                <ion-button @click="showPrintModal = false">
+                    <ion-icon slot="icon-only" name="close"></ion-icon>
+                </ion-button>
+            </ion-buttons>
+        </ion-toolbar>
+    </ion-header>
+    <ion-content class="ion-padding">
+        <div style="max-width: 80mm; margin: 0 auto;">
+            <div id="printPreviewContent" style="font-family: 'Courier New', Courier, monospace; font-size: 12px; line-height: 1.4;"></div>
+        </div>
+    </ion-content>
+    <ion-footer>
+        <ion-toolbar class="ion-padding">
+            <ion-button expand="block" size="large" @click="executePrint()">
+                <ion-icon slot="start" name="print-outline"></ion-icon>
+                {% trans "Print" %}
+            </ion-button>
+        </ion-toolbar>
+    </ion-footer>
+</ion-modal>
+</div>
+
+<script>
+function posApp() {
+    return {
+        // Products
+        allProducts: [],
+        filteredProducts: [],
+        selectedCategory: '',
+        searchQuery: '',
+
+        // Cart
+        cartItems: [],
+
+        // Checkout
+        showCheckoutModal: false,
+        paymentMethod: 'cash',
+        amountPaid: 0,
+        customerName: '',
+        processing: false,
+
+        // Parked Tickets
+        showParkedTicketsModal: false,
+        parkedTickets: [],
+        loadingParkedTickets: false,
+
+        // Print Modal
+        showPrintModal: false,
+        printData: null,
+
+        // Fullscreen
+        isFullscreen: false,
+
+        // Computed
+        get cartTotal() {
+            const subtotal = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            const taxRate = {{ STORE_CONFIG.tax_rate }} / 100;
+
+            {% if STORE_CONFIG.tax_included %}
+            return Math.round(subtotal * 100) / 100;
+            {% else %}
+            const tax = subtotal * taxRate;
+            return Math.round((subtotal + tax) * 100) / 100;
+            {% endif %}
+        },
+
+        get change() {
+            const paid = parseFloat(this.amountPaid) || 0;
+            const changeAmount = paid - this.cartTotal;
+            return Math.max(0, Math.round(changeAmount * 100) / 100);
+        },
+
+        async init() {
+            await this.loadProducts();
+            await this.loadParkedTickets(); // Load parked tickets on init to show badge count
+            await this.loadActiveCart(); // Load active cart from database
+
+            // Auto-save cart when it changes (debounced)
+            this.$watch('cartItems', () => {
+                this.autoSaveCart();
+            });
+
+            // Watch for parked tickets modal opening to refresh the list
+            this.$watch('showParkedTicketsModal', (value) => {
+                if (value) {
+                    this.loadParkedTickets();
+                }
+            });
+
+            // Detect fullscreen changes
+            document.addEventListener('fullscreenchange', () => {
+                this.isFullscreen = !!document.fullscreenElement;
+            });
+        },
+
+        toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.log('Error entering fullscreen:', err);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        },
+
+        goBack() {
+            // Exit fullscreen first if active
+            if (document.fullscreenElement) {
+                document.exitFullscreen();
+            }
+            window.history.back();
+        },
+
+        async loadProducts() {
+            try {
+                const response = await fetch('{% url "sales:pos_products_api" %}');
+                const data = await response.json();
+
+                if (data.success) {
+                    this.allProducts = data.products;
+                    this.filteredProducts = data.products;
+                } else {
+                    await this.showErrorAlert(data.error || '{% trans "Error loading products" %}');
+                }
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Network error: " %}' + error.message);
+            }
+        },
+
+        filterProducts() {
+            let filtered = this.allProducts;
+
+            // Filter by category
+            if (this.selectedCategory) {
+                filtered = filtered.filter(p => p.category == this.selectedCategory);
+            }
+
+            // Filter by search
+            if (this.searchQuery) {
+                const query = this.searchQuery.toLowerCase();
+                filtered = filtered.filter(p =>
+                    p.name.toLowerCase().includes(query) ||
+                    (p.sku && p.sku.toLowerCase().includes(query))
+                );
+            }
+
+            this.filteredProducts = filtered;
+        },
+
+        addToCart(product) {
+            if (product.stock === 0) return;
+
+            const existingItem = this.cartItems.find(item => item.product_id === product.id);
+
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                this.cartItems.push({
+                    product_id: product.id,
+                    name: product.name,
+                    sku: product.sku,
+                    price: Math.round(parseFloat(product.price) * 100) / 100,
+                    quantity: 1,
+                    image: product.image,
+                    discount: 0
+                });
+            }
+        },
+
+        removeFromCart(index) {
+            this.cartItems.splice(index, 1);
+        },
+
+        increaseQuantity(index) {
+            this.cartItems[index].quantity++;
+        },
+
+        decreaseQuantity(index) {
+            if (this.cartItems[index].quantity > 1) {
+                this.cartItems[index].quantity--;
+            }
+        },
+
+        async clearCart() {
+            const alert = document.createElement('ion-alert');
+            alert.header = '{% trans "Clear Cart" %}';
+            alert.message = '{% trans "Are you sure you want to clear the cart?" %}';
+            alert.buttons = [
+                {
+                    text: '{% trans "Cancel" %}',
+                    role: 'cancel'
+                },
+                {
+                    text: '{% trans "Clear" %}',
+                    role: 'confirm',
+                    handler: async () => {
+                        await this.clearActiveCartFromDB();
+                        this.cartItems = [];
+                    }
+                }
+            ];
+            document.body.appendChild(alert);
+            await alert.present();
+        },
+
+        toggleCartMenu() {
+            const menu = document.querySelector('ion-menu[menu-id="sales-cart-menu"]');
+            menu.toggle();
+        },
+
+        closeCartMenu() {
+            const menu = document.querySelector('ion-menu[menu-id="sales-cart-menu"]');
+            menu.close();
+        },
+
+        printReceipt() {
+            // TODO: Implement print functionality
+        },
+
+        checkout() {
+            this.showCheckoutModal = true;
+            this.amountPaid = this.cartTotal;
+        },
+
+        async completeSale() {
+            if (this.paymentMethod === 'cash' && parseFloat(this.amountPaid) < this.cartTotal) {
+                await this.showErrorAlert('{% trans "Amount paid is less than total" %}');
+                return;
+            }
+
+            this.processing = true;
+
+            try {
+                const response = await fetch('/plugins/sales/pos/api/complete-sale/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        items: this.cartItems,
+                        payment_method: this.paymentMethod,
+                        amount_paid: this.amountPaid,
+                        customer_name: this.customerName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // No alert in kiosk mode - silent completion
+
+                    // Clear cart from database
+                    await this.clearActiveCartFromDB();
+
+                    // Reset
+                    this.cartItems = [];
+                    this.showCheckoutModal = false;
+                    this.customerName = '';
+                    this.amountPaid = 0;
+
+                    // Reload products to update stock
+                    await this.loadProducts();
+                } else {
+                    await this.showErrorAlert(result.error || '{% trans "Error completing sale" %}');
+                }
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Network error: " %}' + error.message);
+            } finally {
+                this.processing = false;
+            }
+        },
+
+        async completeSaleAndPrint() {
+            if (this.paymentMethod === 'cash' && parseFloat(this.amountPaid) < this.cartTotal) {
+                await this.showErrorAlert('{% trans "Amount paid is less than total" %}');
+                return;
+            }
+
+            this.processing = true;
+
+            try {
+                const response = await fetch('{% url "sales:complete_sale_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        items: this.cartItems,
+                        payment_method: this.paymentMethod,
+                        amount_paid: this.amountPaid,
+                        customer_name: this.customerName
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Print receipt
+                    await this.printReceipt(result);
+
+                    // No alert in kiosk mode - just print silently
+
+                    // Clear cart from database
+                    await this.clearActiveCartFromDB();
+
+                    // Reset
+                    this.cartItems = [];
+                    this.showCheckoutModal = false;
+                    this.customerName = '';
+                    this.amountPaid = 0;
+
+                    // Reload products to update stock
+                    await this.loadProducts();
+                } else {
+                    await this.showErrorAlert(result.error || '{% trans "Error completing sale" %}');
+                }
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Network error: " %}' + error.message);
+            } finally {
+                this.processing = false;
+            }
+        },
+
+        async printDeliveryNote() {
+            if (this.cartItems.length === 0) {
+                await this.showErrorAlert('{% trans "Cart is empty" %}');
+                return;
+            }
+
+            try {
+                const receiptData = {
+                    receipt_id: `DELIVERY-${Date.now()}`,
+                    is_delivery_note: true,
+                    items: this.cartItems.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        total: item.quantity * item.price
+                    })),
+                    subtotal: this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                    tax_amount: 0,
+                    total: this.cartTotal,
+                    date: new Date().toLocaleString('es-ES'),
+                    customer_name: this.customerName || '{% trans "Customer" %}'
+                };
+
+                // Use modal-based print (kiosk friendly - no full-screen interruption)
+                await this.showPrintPreview(receiptData);
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Print error: " %}' + error.message);
+            }
+        },
+
+        async printReceipt(saleData) {
+            try {
+                const taxRate = {{ STORE_CONFIG.tax_rate }};
+                const subtotal = this.cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                const taxAmount = taxRate > 0 ? (subtotal * taxRate / 100) : 0;
+
+                const receiptData = {
+                    receipt_id: saleData.sale_number,
+                    is_delivery_note: false,
+                    items: this.cartItems.map(item => ({
+                        name: item.name,
+                        quantity: item.quantity,
+                        price: item.price,
+                        total: item.quantity * item.price
+                    })),
+                    subtotal: subtotal,
+                    tax_amount: taxAmount,
+                    total: this.cartTotal,
+                    payment_method: this.paymentMethod === 'cash' ? '{% trans "Cash" %}' : this.paymentMethod === 'card' ? '{% trans "Card" %}' : '{% trans "Transfer" %}',
+                    paid: parseFloat(this.amountPaid),
+                    change: parseFloat(this.amountPaid) - this.cartTotal,
+                    date: new Date().toLocaleString('es-ES'),
+                    customer_name: this.customerName || ''
+                };
+
+                // Use modal-based print (kiosk friendly - no full-screen interruption)
+                await this.showPrintPreview(receiptData);
+            } catch (error) {
+                console.error('Print error:', error);
+            }
+        },
+
+        // ============================================================================
+        // PARKING TICKETS METHODS
+        // ============================================================================
+
+        async parkCurrentTicket() {
+            if (this.cartItems.length === 0) {
+                await this.showErrorAlert('{% trans "Cart is empty. Add items before parking." %}');
+                return;
+            }
+
+            try {
+                const response = await fetch('{% url "sales:park_ticket_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        items: this.cartItems,
+                        employee_name: 'Current User',  // TODO: Get from session
+                        notes: ''
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    await this.showSuccessAlert(
+                        '{% trans "Ticket parked successfully!" %}',
+                        '{% trans "Ticket #" %}' + result.ticket_number
+                    );
+
+                    // Clear cart
+                    this.cartItems = [];
+
+                    // Refresh parked tickets list to update badge count
+                    await this.loadParkedTickets();
+
+                    // Close cart menu if open
+                    this.closeCartMenu();
+                } else {
+                    await this.showErrorAlert(result.error || '{% trans "Error parking ticket" %}');
+                }
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Network error: " %}' + error.message);
+            }
+        },
+
+        async loadParkedTickets() {
+            this.loadingParkedTickets = true;
+
+            try {
+                const response = await fetch('{% url "sales:parked_tickets_api" %}');
+                const data = await response.json();
+
+                if (data.success) {
+                    this.parkedTickets = data.tickets;
+                } else {
+                    await this.showErrorAlert(data.error || '{% trans "Error loading parked tickets" %}');
+                }
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Network error: " %}' + error.message);
+            } finally {
+                this.loadingParkedTickets = false;
+            }
+        },
+
+        async recoverParkedTicket(ticketId) {
+            try {
+                const response = await fetch(`{% url "sales:recover_ticket_api" ticket_id=0 %}`.replace('0', ticketId), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Load cart data and ensure prices are rounded to 2 decimals
+                    this.cartItems = result.cart_data.items.map(item => ({
+                        ...item,
+                        price: Math.round(parseFloat(item.price) * 100) / 100
+                    }));
+
+                    // Refresh parked tickets list to update badge count
+                    await this.loadParkedTickets();
+
+                    // Close modal
+                    this.showParkedTicketsModal = false;
+
+                    await this.showSuccessAlert(result.message);
+                } else {
+                    await this.showErrorAlert(result.error || '{% trans "Error recovering ticket" %}');
+                }
+            } catch (error) {
+                await this.showErrorAlert('{% trans "Network error: " %}' + error.message);
+            }
+        },
+
+        // ============================================================================
+        // ACTIVE CART PERSISTENCE (Auto-save to survive restarts)
+        // ============================================================================
+
+        async loadActiveCart() {
+            try {
+                const response = await fetch('{% url "sales:load_cart_api" %}?employee_name=Current User');
+                const data = await response.json();
+
+                if (data.success && data.cart_data && data.cart_data.items) {
+                    // Ensure prices are rounded to 2 decimals when loading from database
+                    this.cartItems = data.cart_data.items.map(item => ({
+                        ...item,
+                        price: Math.round(parseFloat(item.price) * 100) / 100
+                    }));
+                    console.log('[POS] Active cart loaded from database:', this.cartItems.length, 'items');
+                }
+            } catch (error) {
+                console.error('[POS] Error loading active cart:', error);
+            }
+        },
+
+        autoSaveCart() {
+            // Debounce auto-save to avoid too many requests
+            clearTimeout(this._saveCartTimeout);
+            this._saveCartTimeout = setTimeout(async () => {
+                await this.saveActiveCart();
+            }, 500); // Save 500ms after last change
+        },
+
+        async saveActiveCart() {
+            try {
+                const response = await fetch('{% url "sales:save_cart_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        items: this.cartItems,
+                        employee_name: 'Current User'  // TODO: Get from session
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    console.log('[POS] Cart auto-saved to database');
+                }
+            } catch (error) {
+                console.error('[POS] Error saving cart:', error);
+            }
+        },
+
+        async clearActiveCartFromDB() {
+            try {
+                await fetch('{% url "sales:clear_cart_api" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.getCookie('csrftoken')
+                    },
+                    body: JSON.stringify({
+                        employee_name: 'Current User'  // TODO: Get from session
+                    })
+                });
+                console.log('[POS] Active cart cleared from database');
+            } catch (error) {
+                console.error('[POS] Error clearing cart:', error);
+            }
+        },
+
+        // ============================================================================
+        // UTILITY METHODS
+        // ============================================================================
+
+        async showSuccessAlert(message, subHeader = '') {
+            const alert = document.createElement('ion-alert');
+            alert.header = '{% trans "Success" %}';
+            if (subHeader) {
+                alert.subHeader = subHeader;
+            }
+            alert.message = message;
+            alert.buttons = ['OK'];
+            document.body.appendChild(alert);
+            await alert.present();
+        },
+
+        async showErrorAlert(message, subHeader = '') {
+            const alert = document.createElement('ion-alert');
+            alert.header = '{% trans "Error" %}';
+            if (subHeader) {
+                alert.subHeader = subHeader;
+            }
+            alert.message = message;
+            alert.buttons = ['OK'];
+            document.body.appendChild(alert);
+            await alert.present();
+        },
+
+        getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        },
+
+        // ============================================================================
+        // MODAL-BASED PRINT SYSTEM (Kiosk Friendly)
+        // ============================================================================
+
+        /**
+         * Show print preview in modal instead of opening new window
+         * This prevents full-screen interruption in kiosk mode
+         */
+        async showPrintPreview(receiptData) {
+            this.printData = receiptData;
+
+            // Generate receipt HTML
+            const receiptHTML = this.generateReceiptHTML(receiptData);
+
+            // Show modal
+            this.showPrintModal = true;
+
+            // Wait for modal to render, then inject HTML
+            await this.$nextTick();
+            setTimeout(() => {
+                const container = document.getElementById('printPreviewContent');
+                if (container) {
+                    container.innerHTML = receiptHTML;
+                }
+            }, 100);
+        },
+
+        /**
+         * Execute print from modal - prints only the receipt content
+         */
+        executePrint() {
+            const content = document.getElementById('printPreviewContent');
+            if (!content) return;
+
+            // Create invisible iframe for printing
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = 'none';
+            document.body.appendChild(iframe);
+
+            const iframeDoc = iframe.contentWindow.document;
+            iframeDoc.open();
+            iframeDoc.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Receipt</title>
+                    <style>
+                        @media print {
+                            @page {
+                                size: 80mm auto;
+                                margin: 0;
+                            }
+                            body {
+                                margin: 0;
+                                padding: 5mm;
+                            }
+                        }
+                        body {
+                            font-family: 'Courier New', Courier, monospace;
+                            font-size: 12px;
+                            line-height: 1.4;
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${content.innerHTML}
+                </body>
+                </html>
+            `);
+            iframeDoc.close();
+
+            // Print after iframe loads
+            iframe.onload = () => {
+                setTimeout(() => {
+                    iframe.contentWindow.print();
+
+                    // Close modal and cleanup after print
+                    setTimeout(() => {
+                        this.showPrintModal = false;
+                        document.body.removeChild(iframe);
+                    }, 500);
+                }, 100);
+            };
+        },
+
+        /**
+         * Generate receipt HTML for preview
+         */
+        generateReceiptHTML(data) {
+            const {
+                receipt_id = '',
+                is_delivery_note = false,
+                items = [],
+                subtotal = 0,
+                tax_amount = 0,
+                total = 0,
+                payment_method = '',
+                paid = 0,
+                change = 0,
+                date = new Date().toLocaleString('es-ES'),
+                customer_name = ''
+            } = data;
+
+            const currency = '{{ HUB_CONFIG.currency }}';
+            const currencySymbols = {
+                'EUR': '€',
+                'USD': '$',
+                'GBP': '£'
+            };
+            const symbol = currencySymbols[currency] || currency;
+            const taxRate = {{ STORE_CONFIG.tax_rate }};
+
+            let html = `
+                <div style="text-align: center; font-weight: bold; font-size: 16px; margin-bottom: 10px;">
+                    {{ STORE_CONFIG.business_name }}
+                </div>
+                ${`{{ STORE_CONFIG.business_address }}` ? `<div style="text-align: center;">${`{{ STORE_CONFIG.business_address }}`}</div>` : ''}
+                ${`{{ STORE_CONFIG.phone }}` ? `<div style="text-align: center;">Tel: {{ STORE_CONFIG.phone }}</div>` : ''}
+                ${`{{ STORE_CONFIG.vat_number }}` ? `<div style="text-align: center;">NIF: {{ STORE_CONFIG.vat_number }}</div>` : ''}
+
+                <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+
+                <div>${is_delivery_note ? '{% trans "Delivery Note" %}' : '{% trans "Receipt" %}'}: #${receipt_id}</div>
+                <div>{% trans "Date" %}: ${date}</div>
+                ${customer_name ? `<div>{% trans "Customer" %}: ${customer_name}</div>` : ''}
+
+                <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+            `;
+
+            // Items
+            items.forEach(item => {
+                html += `
+                    <div>
+                        <div style="font-weight: bold;">${item.name}</div>
+                        <div style="display: flex; justify-content: space-between; margin-left: 10px; color: #555;">
+                            <span>${item.quantity}x ${symbol}${parseFloat(item.price).toFixed(2)}</span>
+                            <span>${symbol}${parseFloat(item.total).toFixed(2)}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `<div style="border-top: 1px dashed #000; margin: 10px 0;"></div>`;
+
+            // Totals
+            if (subtotal) {
+                html += `<div style="display: flex; justify-content: space-between;"><span>{% trans "Subtotal" %}:</span><span>${symbol}${parseFloat(subtotal).toFixed(2)}</span></div>`;
+            }
+            if (taxRate > 0) {
+                html += `<div style="display: flex; justify-content: space-between;"><span>{% trans "Tax" %} (${taxRate}%):</span><span>${symbol}${parseFloat(tax_amount).toFixed(2)}</span></div>`;
+            }
+            html += `<div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold; margin: 10px 0;"><span>{% trans "TOTAL" %}:</span><span>${symbol}${parseFloat(total).toFixed(2)}</span></div>`;
+
+            // Payment info (only for receipts, not delivery notes)
+            if (!is_delivery_note && payment_method) {
+                html += `
+                    <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                    <div>{% trans "Payment method" %}: ${payment_method}</div>
+                `;
+                if (paid) {
+                    html += `<div style="display: flex; justify-content: space-between;"><span>{% trans "Paid" %}:</span><span>${symbol}${parseFloat(paid).toFixed(2)}</span></div>`;
+                }
+                if (change) {
+                    html += `<div style="display: flex; justify-content: space-between;"><span>{% trans "Change" %}:</span><span>${symbol}${parseFloat(change).toFixed(2)}</span></div>`;
+                }
+            }
+
+            html += `
+                <div style="border-top: 1px dashed #000; margin: 10px 0;"></div>
+                ${`{{ STORE_CONFIG.receipt_footer }}` ? `<div style="text-align: center;">${`{{ STORE_CONFIG.receipt_footer }}`}</div>` : ''}
+                <div style="text-align: center;">{% trans "Thank you for your purchase!" %}</div>
+                <div style="text-align: center;">{% trans "Come back soon" %}</div>
+                ${`{{ STORE_CONFIG.website }}` ? `<div style="text-align: center;">{{ STORE_CONFIG.website }}</div>` : ''}
+            `;
+
+            return html;
+        }
+    }
+}
+</script>
+
+<!-- Adaptive Print System -->
+<script src="{% static 'printers/js/adaptive_print.js' %}"></script>
+{% endblock %}

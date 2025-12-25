@@ -1,0 +1,175 @@
+{% load i18n %}
+
+{% if request.htmx %}
+<!-- Tab bar update via OOB swap (only on HTMX navigation) -->
+<div id="dashboard-tabbar" hx-swap-oob="innerHTML">
+<ion-footer>
+{% include "sales/partials/tabbar_sales.html" with current_view='reports' %}
+</ion-footer>
+</div>
+{% endif %}
+
+<div x-data="reportsApp()" x-init="init()" class="p-4">
+    <!-- Period Selector -->
+    <ion-card class="mb-4">
+        <ion-card-header>
+            <ion-card-title>{% trans "Sales Reports" %}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            <ion-segment x-model="selectedPeriod" @ionChange="loadStats()">
+                <ion-segment-button value="day">
+                    <ion-label>{% trans "Today" %}</ion-label>
+                </ion-segment-button>
+                <ion-segment-button value="week">
+                    <ion-label>{% trans "Week" %}</ion-label>
+                </ion-segment-button>
+                <ion-segment-button value="month">
+                    <ion-label>{% trans "Month" %}</ion-label>
+                </ion-segment-button>
+                <ion-segment-button value="year">
+                    <ion-label>{% trans "Year" %}</ion-label>
+                </ion-segment-button>
+            </ion-segment>
+        </ion-card-content>
+    </ion-card>
+
+    <!-- Stats Cards -->
+    <ion-grid class="ion-no-padding">
+        <ion-row>
+            <ion-col size="12" size-md="4">
+                <ion-card class="mb-4">
+                    <ion-card-content>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <ion-text color="medium" class="text-sm">
+                                    {% trans "Total Sales" %}
+                                </ion-text>
+                                <h2 class="text-3xl font-bold mt-1" x-text="stats.total_sales || 0"></h2>
+                            </div>
+                            <ion-icon name="receipt-outline" class="text-5xl" style="color: var(--ion-color-primary);"></ion-icon>
+                        </div>
+                    </ion-card-content>
+                </ion-card>
+            </ion-col>
+
+            <ion-col size="12" size-md="4">
+                <ion-card class="mb-4">
+                    <ion-card-content>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <ion-text color="medium" class="text-sm">
+                                    {% trans "Total Revenue" %}
+                                </ion-text>
+                                <h2 class="text-3xl font-bold mt-1" x-text="formatCurrency(stats.total_revenue || 0)"></h2>
+                            </div>
+                            <ion-icon name="cash-outline" class="text-5xl" style="color: var(--ion-color-success);"></ion-icon>
+                        </div>
+                    </ion-card-content>
+                </ion-card>
+            </ion-col>
+
+            <ion-col size="12" size-md="4">
+                <ion-card class="mb-4">
+                    <ion-card-content>
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <ion-text color="medium" class="text-sm">
+                                    {% trans "Average Sale" %}
+                                </ion-text>
+                                <h2 class="text-3xl font-bold mt-1" x-text="formatCurrency(stats.avg_sale || 0)"></h2>
+                            </div>
+                            <ion-icon name="trending-up-outline" class="text-5xl" style="color: var(--ion-color-tertiary);"></ion-icon>
+                        </div>
+                    </ion-card-content>
+                </ion-card>
+            </ion-col>
+        </ion-row>
+    </ion-grid>
+
+    <!-- Payment Methods Breakdown -->
+    <ion-card>
+        <ion-card-header>
+            <ion-card-title>{% trans "Payment Methods" %}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            <template x-if="Object.keys(stats.payment_methods || {}).length > 0">
+                <ion-list>
+                    <template x-for="(data, method) in stats.payment_methods" :key="method">
+                        <ion-item>
+                            <ion-label>
+                                <h3 x-text="data.label"></h3>
+                                <p x-text="`${data.count} sales - ${formatCurrency(data.total)}`"></p>
+                            </ion-label>
+                            <ion-badge slot="end" x-text="`${data.percentage}%`"></ion-badge>
+                        </ion-item>
+                    </template>
+                </ion-list>
+            </template>
+            <template x-if="Object.keys(stats.payment_methods || {}).length === 0">
+                <ion-text color="medium">
+                    <p class="text-center py-4">{% trans "No payment data available for this period" %}</p>
+                </ion-text>
+            </template>
+        </ion-card-content>
+    </ion-card>
+
+    <!-- Loading Spinner -->
+    <div x-show="loading" class="flex justify-center items-center py-8">
+        <ion-spinner></ion-spinner>
+    </div>
+</div>
+
+<script>
+function reportsApp() {
+    return {
+        selectedPeriod: 'week',
+        stats: {
+            total_sales: {{ sales_count_week }},
+            total_revenue: {{ sales_total_week }},
+            avg_sale: 0,
+            payment_methods: {}
+        },
+        loading: false,
+
+        init() {
+            console.log('[Sales Reports] Initialized');
+            this.loadStats();
+        },
+
+        async loadStats() {
+            this.loading = true;
+            try {
+                const response = await fetch(`{% url 'sales:reports_stats_ajax' %}?period=${this.selectedPeriod}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    this.stats = data;
+                } else {
+                    throw new Error('Failed to load stats');
+                }
+            } catch (error) {
+                console.error('[Sales Reports] Error loading stats:', error);
+                this.showToast('{% trans "Error loading statistics" %}', 'danger');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        formatCurrency(amount) {
+            return new Intl.NumberFormat('es-ES', {
+                style: 'currency',
+                currency: '{{ HUB_CONFIG.currency|default:"EUR" }}'
+            }).format(amount);
+        },
+
+        async showToast(message, color = 'primary') {
+            const toast = document.createElement('ion-toast');
+            toast.message = message;
+            toast.duration = 2000;
+            toast.color = color;
+            toast.position = 'top';
+            document.body.appendChild(toast);
+            await toast.present();
+        }
+    }
+}
+</script>

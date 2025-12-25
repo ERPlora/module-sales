@@ -1,0 +1,584 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-24 11:34+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+#: templates/sales/detail.html:33
+msgid "Sale"
+msgstr ""
+
+#: templates/sales/detail.html:52
+msgid "Customer"
+msgstr ""
+
+#: templates/sales/detail.html:57
+msgid "No customer"
+msgstr ""
+
+#: templates/sales/detail.html:64
+msgid "Employee"
+msgstr ""
+
+#: templates/sales/detail.html:80 templates/sales/pos.html:303
+msgid "Payment Method"
+msgstr ""
+
+#: templates/sales/detail.html:93 templates/sales/pos.html:330
+msgid "Amount Paid"
+msgstr ""
+
+#: templates/sales/detail.html:99
+msgid "Change Given"
+msgstr ""
+
+#: templates/sales/detail.html:112
+msgid "Items"
+msgstr ""
+
+#: templates/sales/detail.html:128
+msgid "Qty:"
+msgstr ""
+
+#: templates/sales/detail.html:148
+msgid "Subtotal:"
+msgstr ""
+
+#: templates/sales/detail.html:154
+msgid "Discount:"
+msgstr ""
+
+#: templates/sales/detail.html:161
+msgid "Tax:"
+msgstr ""
+
+#: templates/sales/detail.html:168 templates/sales/pos.html:271
+#: templates/sales/pos.html:321
+msgid "Total:"
+msgstr ""
+
+#: templates/sales/detail.html:182
+msgid "Back to History"
+msgstr ""
+
+#: templates/sales/detail.html:189
+msgid "Reprint Receipt"
+msgstr ""
+
+#: templates/sales/history.html:5 templates/sales/history.html:32
+#: templates/sales/index.html:89
+msgid "Historial de Ventas"
+msgstr ""
+
+#: templates/sales/history.html:36
+msgid "Nuevo"
+msgstr ""
+
+#: templates/sales/history.html:56
+msgid "Buscar por nº venta o cliente..."
+msgstr ""
+
+#: templates/sales/history.html:72
+msgid "Desde"
+msgstr ""
+
+#: templates/sales/history.html:88
+msgid "Hasta"
+msgstr ""
+
+#: templates/sales/history.html:109
+msgid "Todos los estados"
+msgstr ""
+
+#: templates/sales/history.html:110
+msgid "Completada"
+msgstr ""
+
+#: templates/sales/history.html:111
+msgid "Pendiente"
+msgstr ""
+
+#: templates/sales/history.html:112
+msgid "Cancelada"
+msgstr ""
+
+#: templates/sales/history.html:132
+#: templates/sales/partials/sales_table_partial.html:17
+msgid "Nº Venta"
+msgstr ""
+
+#: templates/sales/history.html:149
+#: templates/sales/partials/sales_table_partial.html:34
+msgid "Fecha"
+msgstr ""
+
+#: templates/sales/history.html:159
+#: templates/sales/partials/sales_table_partial.html:44
+msgid "Cliente"
+msgstr ""
+
+#: templates/sales/history.html:164
+msgid "Empleado"
+msgstr ""
+
+#: templates/sales/history.html:169
+#: templates/sales/partials/sales_table_partial.html:49
+msgid "Método de Pago"
+msgstr ""
+
+#: templates/sales/history.html:181 templates/sales/index.html:159
+#: templates/sales/partials/sales_table_partial.html:61
+msgid "Total"
+msgstr ""
+
+#: templates/sales/history.html:191
+#: templates/sales/partials/sales_table_partial.html:71
+msgid "Estado"
+msgstr ""
+
+#: templates/sales/history.html:196
+#: templates/sales/partials/sales_table_partial.html:76
+msgid "Acciones"
+msgstr ""
+
+#: templates/sales/index.html:5 templates/sales/index.html:11
+msgid "Ventas"
+msgstr ""
+
+#: templates/sales/index.html:12
+msgid "Gestión de ventas y punto de venta"
+msgstr ""
+
+#: templates/sales/index.html:24
+msgid "Ventas Hoy"
+msgstr ""
+
+#: templates/sales/index.html:38
+msgid "Ingresos Hoy"
+msgstr ""
+
+#: templates/sales/index.html:52
+msgid "Ventas Semana"
+msgstr ""
+
+#: templates/sales/index.html:66
+msgid "Ingresos Semana"
+msgstr ""
+
+#: templates/sales/index.html:79
+msgid "Acciones Rápidas"
+msgstr ""
+
+#: templates/sales/index.html:85
+msgid "Punto de Venta"
+msgstr ""
+
+#: templates/sales/index.html:93
+msgid "Reportes"
+msgstr ""
+
+#: templates/sales/index.html:97
+msgid "Configuración"
+msgstr ""
+
+#: templates/sales/index.html:107
+msgid "Ventas Recientes"
+msgstr ""
+
+#: templates/sales/index.html:109
+msgid "Ver todas"
+msgstr ""
+
+#: templates/sales/index.html:136
+msgid "No hay ventas recientes"
+msgstr ""
+
+#: templates/sales/index.html:138
+msgid "Hacer primera venta"
+msgstr ""
+
+#: templates/sales/index.html:150
+msgid "Métodos de Pago (Hoy)"
+msgstr ""
+
+#: templates/sales/index.html:157
+msgid "Método"
+msgstr ""
+
+#: templates/sales/index.html:158
+msgid "Cantidad"
+msgstr ""
+
+#: templates/sales/partials/sales_pagination.html:7
+msgid "Mostrar"
+msgstr ""
+
+#: templates/sales/partials/sales_pagination.html:24
+msgid "Mostrando"
+msgstr ""
+
+#: templates/sales/partials/sales_pagination.html:24
+msgid "de"
+msgstr ""
+
+#: templates/sales/partials/sales_table_rows.html:23
+msgid "Sin cliente"
+msgstr ""
+
+#: templates/sales/partials/sales_table_rows.html:82
+msgid "No se encontraron ventas"
+msgstr ""
+
+#: templates/sales/pos.html:5 templates/sales/pos.html:6
+msgid "Point of Sale"
+msgstr ""
+
+#: templates/sales/pos.html:87
+msgid "Search products..."
+msgstr ""
+
+#: templates/sales/pos.html:94 templates/sales/pos.html:165
+msgid "Cart"
+msgstr ""
+
+#: templates/sales/pos.html:105
+msgid "All"
+msgstr ""
+
+#: templates/sales/pos.html:133
+msgid "Out of Stock"
+msgstr ""
+
+#: templates/sales/pos.html:150
+msgid "No products found"
+msgstr ""
+
+#: templates/sales/pos.html:182
+msgid "No items in cart"
+msgstr ""
+
+#: templates/sales/pos.html:183
+msgid "Select products to add them"
+msgstr ""
+
+#: templates/sales/pos.html:232 templates/sales/pos.html:306
+msgid "Cash"
+msgstr ""
+
+#: templates/sales/pos.html:238 templates/sales/pos.html:309
+msgid "Card"
+msgstr ""
+
+#: templates/sales/pos.html:250
+msgid "Parked"
+msgstr ""
+
+#: templates/sales/pos.html:256
+msgid "Park"
+msgstr ""
+
+#: templates/sales/pos.html:262 templates/sales/pos.html:566
+msgid "Clear"
+msgstr ""
+
+#: templates/sales/pos.html:279
+msgid "Pay"
+msgstr ""
+
+#: templates/sales/pos.html:291
+msgid "Checkout"
+msgstr ""
+
+#: templates/sales/pos.html:312
+msgid "Transfer"
+msgstr ""
+
+#: templates/sales/pos.html:339
+msgid "Change:"
+msgstr ""
+
+#: templates/sales/pos.html:347
+msgid "Customer Name (optional)"
+msgstr ""
+
+#: templates/sales/pos.html:348
+msgid "John Doe"
+msgstr ""
+
+#: templates/sales/pos.html:360
+msgid "Processing..."
+msgstr ""
+
+#: templates/sales/pos.html:360
+msgid "Complete Sale"
+msgstr ""
+
+#: templates/sales/pos.html:370
+msgid "Parked Tickets"
+msgstr ""
+
+#: templates/sales/pos.html:382
+msgid "Loading parked tickets..."
+msgstr ""
+
+#: templates/sales/pos.html:389
+msgid "No parked tickets"
+msgstr ""
+
+#: templates/sales/pos.html:390
+msgid "Park a ticket to save it for later"
+msgstr ""
+
+#: templates/sales/pos.html:495
+msgid "Error loading products"
+msgstr ""
+
+#: templates/sales/pos.html:498 templates/sales/pos.html:644
+#: templates/sales/pos.html:694 templates/sales/pos.html:711
+#: templates/sales/pos.html:747
+msgid "Network error: "
+msgstr ""
+
+#: templates/sales/pos.html:558
+msgid "Clear Cart"
+msgstr ""
+
+#: templates/sales/pos.html:559
+msgid "Are you sure you want to clear the cart?"
+msgstr ""
+
+#: templates/sales/pos.html:562
+msgid "Cancel"
+msgstr ""
+
+#: templates/sales/pos.html:599
+msgid "Amount paid is less than total"
+msgstr ""
+
+#: templates/sales/pos.html:624
+msgid "Sale completed successfully!"
+msgstr ""
+
+#: templates/sales/pos.html:625
+msgid "Sale #"
+msgstr ""
+
+#: templates/sales/pos.html:626
+msgid "Total: $"
+msgstr ""
+
+#: templates/sales/pos.html:641
+msgid "Error completing sale"
+msgstr ""
+
+#: templates/sales/pos.html:656
+msgid "Cart is empty. Add items before parking."
+msgstr ""
+
+#: templates/sales/pos.html:678
+msgid "Ticket parked successfully!"
+msgstr ""
+
+#: templates/sales/pos.html:679
+msgid "Ticket #"
+msgstr ""
+
+#: templates/sales/pos.html:691
+msgid "Error parking ticket"
+msgstr ""
+
+#: templates/sales/pos.html:708
+msgid "Error loading parked tickets"
+msgstr ""
+
+#: templates/sales/pos.html:744
+msgid "Error recovering ticket"
+msgstr ""
+
+#: templates/sales/pos.html:828
+msgid "Success"
+msgstr ""
+
+#: templates/sales/pos.html:837
+msgid "Error"
+msgstr ""
+
+#: templates/sales/reports.html:5 templates/sales/reports.html:6
+#: templates/sales/reports.html:47
+msgid "Sales Reports"
+msgstr ""
+
+#: templates/sales/reports.html:53
+msgid "Today"
+msgstr ""
+
+#: templates/sales/reports.html:56
+msgid "Week"
+msgstr ""
+
+#: templates/sales/reports.html:59
+msgid "Month"
+msgstr ""
+
+#: templates/sales/reports.html:62
+msgid "Year"
+msgstr ""
+
+#: templates/sales/reports.html:77
+msgid "Total Sales"
+msgstr ""
+
+#: templates/sales/reports.html:93
+msgid "Total Revenue"
+msgstr ""
+
+#: templates/sales/reports.html:109
+msgid "Average Sale"
+msgstr ""
+
+#: templates/sales/reports.html:124
+msgid "Payment Methods"
+msgstr ""
+
+#: templates/sales/reports.html:142
+msgid "No payment data available for this period"
+msgstr ""
+
+#: templates/sales/reports.html:183
+msgid "Error loading statistics"
+msgstr ""
+
+#: templates/sales/settings.html:5
+msgid "Configuración - Ventas"
+msgstr ""
+
+#: templates/sales/settings.html:32
+msgid "Configuración de Ventas"
+msgstr ""
+
+#: templates/sales/settings.html:42
+msgid "Configuración Global del Hub"
+msgstr ""
+
+#: templates/sales/settings.html:44
+msgid ""
+"Esta configuración se gestiona en Settings del Hub y se aplica a todos los "
+"plugins"
+msgstr ""
+
+#: templates/sales/settings.html:51
+msgid "Moneda"
+msgstr ""
+
+#: templates/sales/settings.html:56
+msgid "Tasa de Impuesto"
+msgstr ""
+
+#: templates/sales/settings.html:61
+msgid "Impuesto Incluido"
+msgstr ""
+
+#: templates/sales/settings.html:63
+msgid "Sí"
+msgstr ""
+
+#: templates/sales/settings.html:63
+msgid "No"
+msgstr ""
+
+#: templates/sales/settings.html:68
+msgid "Impresión Automática"
+msgstr ""
+
+#: templates/sales/settings.html:70
+msgid "Activada"
+msgstr ""
+
+#: templates/sales/settings.html:70
+msgid "Desactivada"
+msgstr ""
+
+#: templates/sales/settings.html:76
+msgid "Encabezado del Recibo"
+msgstr ""
+
+#: templates/sales/settings.html:81
+msgid "Pie del Recibo"
+msgstr ""
+
+#: templates/sales/settings.html:90
+msgid "Configuración del Plugin de Ventas"
+msgstr ""
+
+#: templates/sales/settings.html:95
+msgid "Métodos de Pago"
+msgstr ""
+
+#: templates/sales/settings.html:99
+msgid "Efectivo"
+msgstr ""
+
+#: templates/sales/settings.html:101
+msgid "Habilitar efectivo como método de pago"
+msgstr ""
+
+#: templates/sales/settings.html:113
+msgid "Tarjeta"
+msgstr ""
+
+#: templates/sales/settings.html:115
+msgid "Habilitar tarjeta como método de pago"
+msgstr ""
+
+#: templates/sales/settings.html:127
+msgid "Transferencia"
+msgstr ""
+
+#: templates/sales/settings.html:129
+msgid "Habilitar transferencia bancaria como método de pago"
+msgstr ""
+
+#: templates/sales/settings.html:144
+msgid "Otras Opciones"
+msgstr ""
+
+#: templates/sales/settings.html:148
+msgid "Requerir Cliente"
+msgstr ""
+
+#: templates/sales/settings.html:150
+msgid "Obligatorio seleccionar cliente para cada venta"
+msgstr ""
+
+#: templates/sales/settings.html:162
+msgid "Permitir Descuentos"
+msgstr ""
+
+#: templates/sales/settings.html:164
+msgid "Permitir aplicar descuentos en el POS"
+msgstr ""
+
+#: templates/sales/settings.html:176
+msgid "Habilitar Tickets Aparcados"
+msgstr ""
+
+#: templates/sales/settings.html:178
+msgid "Permitir aparcar tickets (guardar carrito temporalmente)"
+msgstr ""
+
+#: templates/sales/settings.html:197
+msgid "Restablecer a Valores Predeterminados"
+msgstr ""

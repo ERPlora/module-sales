@@ -1,0 +1,86 @@
+{% load i18n %}
+
+<!-- Partial usado para respuestas HTMX (tabla + paginación) -->
+<div class="overflow-x-auto">
+    <table class="w-full">
+        <thead style="background: var(--ion-color-step-50);">
+            <tr>
+                <!-- Sale Number (sortable) -->
+                <th
+                    class="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-opacity-80 select-none"
+                    style="color: var(--ion-color-medium);"
+                    hx-get="{{ request.path }}"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-vals='{"order_by": "{% if request.GET.order_by == \"sale_number\" %}-sale_number{% elif request.GET.order_by == \"-sale_number\" %}sale_number{% else %}-sale_number{% endif %}"}'
+                    hx-push-url="true">
+                    {% trans "Nº Venta" %}
+                    {% if request.GET.order_by == "sale_number" %}
+                    <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                    {% elif request.GET.order_by == "-sale_number" %}
+                    <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                    {% endif %}
+                </th>
+
+                <!-- Date (sortable) -->
+                <th
+                    class="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-opacity-80 select-none"
+                    style="color: var(--ion-color-medium);"
+                    hx-get="{{ request.path }}"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-vals='{"order_by": "{% if request.GET.order_by == \"created_at\" %}-created_at{% elif request.GET.order_by == \"-created_at\" %}created_at{% else %}-created_at{% endif %}"}'
+                    hx-push-url="true">
+                    {% trans "Fecha" %}
+                    {% if request.GET.order_by == "created_at" %}
+                    <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                    {% elif request.GET.order_by == "-created_at" %}
+                    <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                    {% endif %}
+                </th>
+
+                <!-- Customer -->
+                <th class="px-4 py-3 text-left text-sm font-medium" style="color: var(--ion-color-medium);">
+                    {% trans "Cliente" %}
+                </th>
+
+                <!-- Payment Method -->
+                <th class="px-4 py-3 text-left text-sm font-medium" style="color: var(--ion-color-medium);">
+                    {% trans "Método de Pago" %}
+                </th>
+
+                <!-- Total (sortable) -->
+                <th
+                    class="px-4 py-3 text-right text-sm font-medium cursor-pointer hover:bg-opacity-80 select-none"
+                    style="color: var(--ion-color-medium);"
+                    hx-get="{{ request.path }}"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-vals='{"order_by": "{% if request.GET.order_by == \"total\" %}-total{% elif request.GET.order_by == \"-total\" %}total{% else %}-total{% endif %}"}'
+                    hx-push-url="true">
+                    {% trans "Total" %}
+                    {% if request.GET.order_by == "total" %}
+                    <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                    {% elif request.GET.order_by == "-total" %}
+                    <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                    {% endif %}
+                </th>
+
+                <!-- Status -->
+                <th class="px-4 py-3 text-center text-sm font-medium" style="color: var(--ion-color-medium);">
+                    {% trans "Estado" %}
+                </th>
+
+                <!-- Actions -->
+                <th class="px-4 py-3 text-center text-sm font-medium" style="color: var(--ion-color-medium); width: 100px;">
+                    {% trans "Acciones" %}
+                </th>
+            </tr>
+        </thead>
+        {% include "sales/partials/sales_table_rows.html" %}
+    </table>
+</div>
+
+<ion-card-content>
+    {% include "sales/partials/sales_pagination.html" %}
+</ion-card-content>

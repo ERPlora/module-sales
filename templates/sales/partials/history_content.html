@@ -1,0 +1,191 @@
+{% load i18n %}
+
+{% if request.htmx %}
+<!-- Tab bar update via OOB swap (only on HTMX navigation) -->
+<div id="dashboard-tabbar" hx-swap-oob="innerHTML">
+<ion-footer>
+{% include "sales/partials/tabbar_sales.html" with current_view='history' %}
+</ion-footer>
+</div>
+{% endif %}
+
+<div class="p-4">
+    <!-- Sales History Table -->
+    <ion-card class="my-4">
+        <ion-card-header>
+            <div class="flex justify-between items-center">
+                <ion-card-title>{% trans "Historial de Ventas" %}</ion-card-title>
+                <ion-button href="{% url 'sales:pos' %}" fill="solid">
+                    <ion-icon slot="start" name="cart-outline"></ion-icon>
+                    {% trans "Nuevo" %}
+                </ion-button>
+            </div>
+        </ion-card-header>
+
+        <!-- Filters Section -->
+        <div class="px-4 pb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+            <!-- Search Bar -->
+            <div class="relative">
+                <ion-icon
+                    name="search-outline"
+                    class="absolute left-3 top-1/2 -translate-y-1/2"
+                    style="color: var(--ion-color-medium); pointer-events: none; z-index: 10;">
+                </ion-icon>
+                <input
+                    type="text"
+                    name="search"
+                    value="{{ request.GET.search|default:'' }}"
+                    placeholder="{% trans 'Buscar por nº venta o cliente...' %}"
+                    class="w-full h-10 pl-10 pr-3 rounded-lg"
+                    style="border: 1px solid var(--ion-border-color); background: var(--ion-background-color); color: var(--ion-text-color);"
+                    hx-get="{% url 'sales:history' %}"
+                    hx-trigger="keyup changed delay:400ms"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='page'],[name='order_by'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-push-url="true">
+            </div>
+
+            <!-- Date From -->
+            <div>
+                <input
+                    type="date"
+                    name="date_from"
+                    value="{{ request.GET.date_from|default:'' }}"
+                    placeholder="{% trans 'Desde' %}"
+                    class="w-full h-10 px-3 rounded-lg"
+                    style="border: 1px solid var(--ion-border-color); background: var(--ion-background-color); color: var(--ion-text-color);"
+                    hx-get="{% url 'sales:history' %}"
+                    hx-trigger="change"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='search'],[name='page'],[name='order_by'],[name='per_page'],[name='date_to'],[name='status']"
+                    hx-push-url="true">
+            </div>
+
+            <!-- Date To -->
+            <div>
+                <input
+                    type="date"
+                    name="date_to"
+                    value="{{ request.GET.date_to|default:'' }}"
+                    placeholder="{% trans 'Hasta' %}"
+                    class="w-full h-10 px-3 rounded-lg"
+                    style="border: 1px solid var(--ion-border-color); background: var(--ion-background-color); color: var(--ion-text-color);"
+                    hx-get="{% url 'sales:history' %}"
+                    hx-trigger="change"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='search'],[name='page'],[name='order_by'],[name='per_page'],[name='date_from'],[name='status']"
+                    hx-push-url="true">
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+                <select
+                    name="status"
+                    class="w-full h-10 px-3 rounded-lg"
+                    style="border: 1px solid var(--ion-border-color); background: var(--ion-background-color); color: var(--ion-text-color);"
+                    hx-get="{% url 'sales:history' %}"
+                    hx-trigger="change"
+                    hx-target="#sales-table-container"
+                    hx-include="[name='search'],[name='page'],[name='order_by'],[name='per_page'],[name='date_from'],[name='date_to']"
+                    hx-push-url="true">
+                    <option value="">{% trans "Todos los estados" %}</option>
+                    <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>{% trans "Completada" %}</option>
+                    <option value="pending" {% if request.GET.status == 'pending' %}selected{% endif %}>{% trans "Pendiente" %}</option>
+                    <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>{% trans "Cancelada" %}</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Table Container (HTMX updates this) -->
+        <div id="sales-table-container">
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead style="background: var(--ion-color-step-50);">
+                        <tr>
+                            <!-- Sale Number (sortable) -->
+                            <th
+                                class="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-opacity-80 select-none"
+                                style="color: var(--ion-color-medium);"
+                                hx-get="{% url 'sales:history' %}"
+                                hx-target="#sales-table-container"
+                                hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                                hx-vals='{"order_by": "{% if request.GET.order_by == "sale_number" %}-sale_number{% elif request.GET.order_by == "-sale_number" %}sale_number{% else %}-sale_number{% endif %}"}'
+                                hx-push-url="true">
+                                {% trans "Nº Venta" %}
+                                {% if request.GET.order_by == "sale_number" %}
+                                <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                                {% elif request.GET.order_by == "-sale_number" %}
+                                <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                                {% endif %}
+                            </th>
+
+                            <!-- Date (sortable) -->
+                            <th
+                                class="px-4 py-3 text-left text-sm font-medium cursor-pointer hover:bg-opacity-80 select-none"
+                                style="color: var(--ion-color-medium);"
+                                hx-get="{% url 'sales:history' %}"
+                                hx-target="#sales-table-container"
+                                hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                                hx-vals='{"order_by": "{% if request.GET.order_by == "created_at" %}-created_at{% elif request.GET.order_by == "-created_at" %}created_at{% else %}-created_at{% endif %}"}'
+                                hx-push-url="true">
+                                {% trans "Fecha" %}
+                                {% if request.GET.order_by == "created_at" %}
+                                <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                                {% elif request.GET.order_by == "-created_at" %}
+                                <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                                {% endif %}
+                            </th>
+
+                            <!-- Customer -->
+                            <th class="px-4 py-3 text-left text-sm font-medium" style="color: var(--ion-color-medium);">
+                                {% trans "Cliente" %}
+                            </th>
+
+                            <!-- Employee -->
+                            <th class="px-4 py-3 text-left text-sm font-medium" style="color: var(--ion-color-medium);">
+                                {% trans "Empleado" %}
+                            </th>
+
+                            <!-- Payment Method -->
+                            <th class="px-4 py-3 text-left text-sm font-medium" style="color: var(--ion-color-medium);">
+                                {% trans "Método de Pago" %}
+                            </th>
+
+                            <!-- Total (sortable) -->
+                            <th
+                                class="px-4 py-3 text-right text-sm font-medium cursor-pointer hover:bg-opacity-80 select-none"
+                                style="color: var(--ion-color-medium);"
+                                hx-get="{% url 'sales:history' %}"
+                                hx-target="#sales-table-container"
+                                hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                                hx-vals='{"order_by": "{% if request.GET.order_by == "total" %}-total{% elif request.GET.order_by == "-total" %}total{% else %}-total{% endif %}"}'
+                                hx-push-url="true">
+                                {% trans "Total" %}
+                                {% if request.GET.order_by == "total" %}
+                                <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                                {% elif request.GET.order_by == "-total" %}
+                                <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
+                                {% endif %}
+                            </th>
+
+                            <!-- Status -->
+                            <th class="px-4 py-3 text-center text-sm font-medium" style="color: var(--ion-color-medium);">
+                                {% trans "Estado" %}
+                            </th>
+
+                            <!-- Actions -->
+                            <th class="px-4 py-3 text-center text-sm font-medium" style="color: var(--ion-color-medium); width: 100px;">
+                                {% trans "Acciones" %}
+                            </th>
+                        </tr>
+                    </thead>
+                    {% include "sales/partials/sales_table_rows.html" %}
+                </table>
+            </div>
+
+            <ion-card-content>
+                {% include "sales/partials/sales_pagination.html" %}
+            </ion-card-content>
+        </div>
+    </ion-card>
+</div>

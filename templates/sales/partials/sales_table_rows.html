@@ -1,0 +1,86 @@
+{% load i18n %}
+
+<tbody>
+    {% for sale in page_obj %}
+    <tr class="border-b hover:bg-opacity-50" style="border-color: var(--ion-border-color);">
+        <!-- Sale Number -->
+        <td class="px-4 py-3 text-sm font-mono font-semibold">
+            <a href="/plugins/sales/history/{{ sale.id }}/" class="text-primary hover:underline">
+                {{ sale.sale_number }}
+            </a>
+        </td>
+
+        <!-- Date -->
+        <td class="px-4 py-3 text-sm" style="color: var(--ion-color-medium);">
+            {{ sale.created_at|date:"d/m/Y H:i" }}
+        </td>
+
+        <!-- Customer -->
+        <td class="px-4 py-3 text-sm">
+            {% if sale.customer_name %}
+                {{ sale.customer_name }}
+            {% else %}
+                <span style="color: var(--ion-color-medium);">{% trans "Sin cliente" %}</span>
+            {% endif %}
+        </td>
+
+        <!-- Employee -->
+        <td class="px-4 py-3 text-sm">
+            {% if sale.user %}
+                <div class="flex items-center gap-2">
+                    <ion-icon name="person-outline" style="font-size: 16px;"></ion-icon>
+                    <span>{{ sale.user.name }}</span>
+                </div>
+            {% else %}
+                <span style="color: var(--ion-color-medium);">-</span>
+            {% endif %}
+        </td>
+
+        <!-- Payment Method -->
+        <td class="px-4 py-3 text-sm">
+            <div class="flex items-center gap-2">
+                <ion-icon name="{% if sale.payment_method == 'cash' %}cash-outline{% elif sale.payment_method == 'card' %}card-outline{% elif sale.payment_method == 'transfer' %}swap-horizontal-outline{% else %}wallet-outline{% endif %}"></ion-icon>
+                <span>{{ sale.get_payment_method_display }}</span>
+            </div>
+        </td>
+
+        <!-- Total -->
+        <td class="px-4 py-3 text-right text-sm font-semibold" style="color: var(--ion-color-success);">
+            ${{ sale.total|floatformat:2 }}
+        </td>
+
+        <!-- Status -->
+        <td class="px-4 py-3 text-center">
+            {% if sale.status == 'completed' %}
+            <span class="px-2 py-1 rounded-full text-xs font-medium" style="background: var(--ion-color-success-tint); color: var(--ion-color-success-contrast);">
+                {{ sale.get_status_display }}
+            </span>
+            {% elif sale.status == 'pending' %}
+            <span class="px-2 py-1 rounded-full text-xs font-medium" style="background: var(--ion-color-warning-tint); color: var(--ion-color-warning-contrast);">
+                {{ sale.get_status_display }}
+            </span>
+            {% elif sale.status == 'cancelled' %}
+            <span class="px-2 py-1 rounded-full text-xs font-medium" style="background: var(--ion-color-danger-tint); color: var(--ion-color-danger-contrast);">
+                {{ sale.get_status_display }}
+            </span>
+            {% endif %}
+        </td>
+
+        <!-- Actions -->
+        <td class="px-4 py-3 text-center">
+            <div class="flex gap-1 justify-center">
+                <ion-button size="small" fill="clear" href="/plugins/sales/history/{{ sale.id }}/">
+                    <ion-icon slot="icon-only" name="eye-outline"></ion-icon>
+                </ion-button>
+            </div>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="8" class="px-4 py-12 text-center" style="color: var(--ion-color-medium);">
+            <ion-icon name="receipt-outline" class="text-5xl mb-3" style="display: block; margin: 0 auto;"></ion-icon>
+            <p>{% trans "No se encontraron ventas" %}</p>
+        </td>
+    </tr>
+    {% endfor %}
+</tbody>

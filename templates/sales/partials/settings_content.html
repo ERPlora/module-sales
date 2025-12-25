@@ -1,0 +1,308 @@
+{% load i18n %}
+
+{% if request.htmx %}
+<!-- Tab bar update via OOB swap (only on HTMX navigation) -->
+<div id="dashboard-tabbar" hx-swap-oob="innerHTML">
+<ion-footer>
+{% include "sales/partials/tabbar_sales.html" with current_view='settings' %}
+</ion-footer>
+</div>
+{% endif %}
+
+{% csrf_token %}
+<div x-data="settingsApp()" x-init="init()" class="p-4">
+    <ion-card class="my-4">
+        <ion-card-header>
+            <ion-card-title>{% trans "Configuración de Ventas" %}</ion-card-title>
+        </ion-card-header>
+
+        <ion-card-content>
+            <!-- Configuración Global del Hub (Read-only) -->
+            <div class="mb-6 p-4 rounded-lg" style="background: var(--ion-color-step-50);">
+                <div class="flex items-start gap-2 mb-4">
+                    <ion-icon name="information-circle-outline" style="font-size: 20px; color: var(--ion-color-primary);"></ion-icon>
+                    <div class="flex-1">
+                        <h4 class="font-semibold mb-2" style="color: var(--ion-text-color);">{% trans "Configuración Global del Hub" %}</h4>
+                        <p class="text-sm mb-3" style="color: var(--ion-color-medium);">
+                            {% trans "Esta configuración se gestiona en Settings del Hub y se aplica a todos los módulos" %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-3 rounded" style="background: var(--ion-color-light);">
+                        <div class="text-xs font-semibold uppercase mb-1" style="color: var(--ion-color-medium);">{% trans "Moneda" %}</div>
+                        <div class="text-lg font-semibold" style="color: var(--ion-text-color);">{{ HUB_CONFIG.currency }}</div>
+                    </div>
+
+                    <div class="p-3 rounded" style="background: var(--ion-color-light);">
+                        <div class="text-xs font-semibold uppercase mb-1" style="color: var(--ion-color-medium);">{% trans "Tasa de Impuesto" %}</div>
+                        <div class="text-lg font-semibold" style="color: var(--ion-text-color);">{{ STORE_CONFIG.tax_rate }}%</div>
+                    </div>
+
+                    <div class="p-3 rounded" style="background: var(--ion-color-light);">
+                        <div class="text-xs font-semibold uppercase mb-1" style="color: var(--ion-color-medium);">{% trans "Impuesto Incluido" %}</div>
+                        <div class="text-lg font-semibold" style="color: var(--ion-text-color);">
+                            {% if STORE_CONFIG.tax_included %}{% trans "Sí" %}{% else %}{% trans "No" %}{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded" style="background: var(--ion-color-light);">
+                        <div class="text-xs font-semibold uppercase mb-1" style="color: var(--ion-color-medium);">{% trans "Impresión Automática" %}</div>
+                        <div class="text-lg font-semibold" style="color: var(--ion-text-color);">
+                            {% if HUB_CONFIG.auto_print %}{% trans "Activada" %}{% else %}{% trans "Desactivada" %}{% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 p-3 rounded" style="background: var(--ion-color-light);">
+                    <div class="text-xs font-semibold uppercase mb-1" style="color: var(--ion-color-medium);">{% trans "Encabezado del Recibo" %}</div>
+                    <div class="text-sm whitespace-pre-wrap" style="color: var(--ion-text-color);">{{ STORE_CONFIG.receipt_header|default:"—" }}</div>
+                </div>
+
+                <div class="mt-2 p-3 rounded" style="background: var(--ion-color-light);">
+                    <div class="text-xs font-semibold uppercase mb-1" style="color: var(--ion-color-medium);">{% trans "Pie del Recibo" %}</div>
+                    <div class="text-sm whitespace-pre-wrap" style="color: var(--ion-text-color);">{{ STORE_CONFIG.receipt_footer|default:"—" }}</div>
+                </div>
+            </div>
+
+            <div style="height: 2px; background: var(--ion-border-color); margin: 2rem 0;"></div>
+
+            <!-- Configuración Específica del Módulo Sales -->
+            <h3 class="font-semibold mb-4 text-lg" style="color: var(--ion-text-color);">
+                {% trans "Configuración del Módulo de Ventas" %}
+            </h3>
+
+            <!-- Payment Methods -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-3" style="color: var(--ion-text-color);">{% trans "Métodos de Pago" %}</h4>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h5 class="font-semibold mb-1" style="color: var(--ion-text-color);">{% trans "Efectivo" %}</h5>
+                        <p class="text-sm" style="color: var(--ion-color-medium);">
+                            {% trans "Habilitar efectivo como método de pago" %}
+                        </p>
+                    </div>
+                    <ion-toggle
+                        x-ref="toggle_allow_cash"
+                        :checked="settings.allow_cash"
+                        color="primary">
+                    </ion-toggle>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h5 class="font-semibold mb-1" style="color: var(--ion-text-color);">{% trans "Tarjeta" %}</h5>
+                        <p class="text-sm" style="color: var(--ion-color-medium);">
+                            {% trans "Habilitar tarjeta como método de pago" %}
+                        </p>
+                    </div>
+                    <ion-toggle
+                        x-ref="toggle_allow_card"
+                        :checked="settings.allow_card"
+                        color="primary">
+                    </ion-toggle>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h5 class="font-semibold mb-1" style="color: var(--ion-text-color);">{% trans "Transferencia" %}</h5>
+                        <p class="text-sm" style="color: var(--ion-color-medium);">
+                            {% trans "Habilitar transferencia bancaria como método de pago" %}
+                        </p>
+                    </div>
+                    <ion-toggle
+                        x-ref="toggle_allow_transfer"
+                        :checked="settings.allow_transfer"
+                        color="primary">
+                    </ion-toggle>
+                </div>
+            </div>
+
+            <div style="height: 1px; background: var(--ion-border-color); margin: 1.5rem 0;"></div>
+
+            <!-- Other Settings -->
+            <div class="mb-6">
+                <h4 class="font-semibold mb-3" style="color: var(--ion-text-color);">{% trans "Otras Opciones" %}</h4>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h5 class="font-semibold mb-1" style="color: var(--ion-text-color);">{% trans "Requerir Cliente" %}</h5>
+                        <p class="text-sm" style="color: var(--ion-color-medium);">
+                            {% trans "Obligatorio seleccionar cliente para cada venta" %}
+                        </p>
+                    </div>
+                    <ion-toggle
+                        x-ref="toggle_require_customer"
+                        :checked="settings.require_customer"
+                        color="primary">
+                    </ion-toggle>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h5 class="font-semibold mb-1" style="color: var(--ion-text-color);">{% trans "Permitir Descuentos" %}</h5>
+                        <p class="text-sm" style="color: var(--ion-color-medium);">
+                            {% trans "Permitir aplicar descuentos en el POS" %}
+                        </p>
+                    </div>
+                    <ion-toggle
+                        x-ref="toggle_allow_discounts"
+                        :checked="settings.allow_discounts"
+                        color="primary">
+                    </ion-toggle>
+                </div>
+
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex-1">
+                        <h5 class="font-semibold mb-1" style="color: var(--ion-text-color);">{% trans "Habilitar Tickets Aparcados" %}</h5>
+                        <p class="text-sm" style="color: var(--ion-color-medium);">
+                            {% trans "Permitir aparcar tickets (guardar carrito temporalmente)" %}
+                        </p>
+                    </div>
+                    <ion-toggle
+                        x-ref="toggle_enable_parked_tickets"
+                        :checked="settings.enable_parked_tickets"
+                        color="primary">
+                    </ion-toggle>
+                </div>
+            </div>
+
+            <!-- Reset Button -->
+            <div class="mt-6">
+                <ion-button
+                    color="medium"
+                    fill="outline"
+                    expand="block"
+                    @click="resetToDefaults()">
+                    <ion-icon slot="start" name="refresh-outline"></ion-icon>
+                    {% trans "Restablecer a Valores Predeterminados" %}
+                </ion-button>
+            </div>
+        </ion-card-content>
+    </ion-card>
+</div>
+
+<script>
+function settingsApp() {
+    return {
+        settings: {
+            allow_cash: {{ config.allow_cash|lower }},
+            allow_card: {{ config.allow_card|lower }},
+            allow_transfer: {{ config.allow_transfer|lower }},
+            require_customer: {{ config.require_customer|lower }},
+            allow_discounts: {{ config.allow_discounts|lower }},
+            enable_parked_tickets: {{ config.enable_parked_tickets|lower }}
+        },
+
+        init() {
+            console.log('[Sales Settings] Initialized', this.settings);
+
+            this.$nextTick(() => {
+                // Setup event listeners for ion-toggle change events
+                this.setupToggle('toggle_allow_cash', 'allow_cash');
+                this.setupToggle('toggle_allow_card', 'allow_card');
+                this.setupToggle('toggle_allow_transfer', 'allow_transfer');
+                this.setupToggle('toggle_require_customer', 'require_customer');
+                this.setupToggle('toggle_allow_discounts', 'allow_discounts');
+                this.setupToggle('toggle_enable_parked_tickets', 'enable_parked_tickets');
+            });
+        },
+
+        setupToggle(refName, settingKey) {
+            const toggle = this.$refs[refName];
+            if (toggle) {
+                toggle.addEventListener('ionChange', (e) => {
+                    console.log(`[Sales Settings] ${settingKey} changed to:`, e.detail.checked);
+                    this.updateSetting(settingKey, e.detail.checked);
+                });
+            }
+        },
+
+        async updateSetting(key, value) {
+            console.log('[Sales Settings] Updating', key, '=', value);
+
+            // Update local state
+            this.settings[key] = value;
+
+            // Save to server
+            try {
+                const response = await fetch('{% url "sales:settings_save" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(this.settings)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    console.log('[Sales Settings] Saved successfully');
+                    this.showToast('Configuración guardada', 'success');
+                } else {
+                    throw new Error(result.error || 'Error al guardar la configuración');
+                }
+            } catch (error) {
+                console.error('[Sales Settings] Error:', error);
+                this.showToast('Error al guardar la configuración', 'danger');
+                // Revert the change on error
+                this.settings[key] = !value;
+                // Update toggle visually
+                const toggleRef = Object.keys(this.$refs).find(k => k.includes(key));
+                if (toggleRef && this.$refs[toggleRef]) {
+                    this.$refs[toggleRef].checked = !value;
+                }
+            }
+        },
+
+        async resetToDefaults() {
+            this.settings = {
+                allow_cash: true,
+                allow_card: true,
+                allow_transfer: false,
+                require_customer: false,
+                allow_discounts: true,
+                enable_parked_tickets: true
+            };
+
+            // Save to server
+            try {
+                const response = await fetch('{% url "sales:settings_save" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify(this.settings)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    this.showToast('Configuración restablecida a valores predeterminados', 'warning');
+                    // Reload page to reflect changes in toggles
+                    setTimeout(() => window.location.reload(), 1000);
+                } else {
+                    throw new Error(result.error || 'Error al restablecer la configuración');
+                }
+            } catch (error) {
+                console.error('[Sales Settings] Error:', error);
+                this.showToast('Error al restablecer la configuración', 'danger');
+            }
+        },
+
+        async showToast(message, color = 'primary') {
+            const toast = document.createElement('ion-toast');
+            toast.message = message;
+            toast.duration = 2000;
+            toast.color = color;
+            toast.position = 'top';
+            document.body.appendChild(toast);
+            await toast.present();
+        }
+    }
+}
+</script>

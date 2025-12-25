@@ -1,0 +1,178 @@
+{% load i18n %}
+
+{% if request.htmx %}
+<!-- Tab bar update via OOB swap (only on HTMX navigation) -->
+<div id="dashboard-tabbar" hx-swap-oob="innerHTML">
+<ion-footer>
+{% include "sales/partials/tabbar_sales.html" %}
+</ion-footer>
+</div>
+{% endif %}
+
+<div class="p-4">
+    <!-- Sale Header Card -->
+    <ion-card>
+        <ion-card-header>
+            <div class="flex justify-between items-center">
+                <ion-card-title>{% trans "Venta" %} #{{ sale.sale_number }}</ion-card-title>
+                <ion-chip color="{% if sale.status == 'completed' %}success{% elif sale.status == 'pending' %}warning{% else %}danger{% endif %}">
+                    <ion-label>{{ sale.get_status_display }}</ion-label>
+                </ion-chip>
+            </div>
+            <ion-card-subtitle>
+                {{ sale.created_at|date:"d/m/Y H:i" }}
+            </ion-card-subtitle>
+        </ion-card-header>
+
+        <ion-card-content>
+            <ion-grid class="p-0">
+                <ion-row>
+                    <ion-col size="12" size-md="6">
+                        <div class="mb-3">
+                            <ion-text color="medium" class="text-sm">{% trans "Cliente" %}</ion-text>
+                            <p class="font-medium mt-1">
+                                {% if sale.customer_name %}
+                                    {{ sale.customer_name }}
+                                {% else %}
+                                    <ion-text color="medium">{% trans "Sin cliente" %}</ion-text>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </ion-col>
+                    <ion-col size="12" size-md="6">
+                        <div class="mb-3">
+                            <ion-text color="medium" class="text-sm">{% trans "Empleado" %}</ion-text>
+                            <p class="font-medium mt-1">
+                                {% if sale.user %}
+                                    <ion-icon name="person-outline" class="align-middle"></ion-icon>
+                                    {{ sale.user.name }}
+                                {% else %}
+                                    <ion-text color="medium">-</ion-text>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </ion-col>
+                </ion-row>
+
+                <ion-row>
+                    <ion-col size="12" size-md="6">
+                        <div class="mb-3">
+                            <ion-text color="medium" class="text-sm">{% trans "Método de Pago" %}</ion-text>
+                            <p class="font-medium mt-1">
+                                <ion-icon name="{% if sale.payment_method == 'cash' %}cash-outline{% elif sale.payment_method == 'card' %}card-outline{% else %}swap-horizontal-outline{% endif %}" class="align-middle"></ion-icon>
+                                {{ sale.get_payment_method_display }}
+                            </p>
+                        </div>
+                    </ion-col>
+                </ion-row>
+
+                {% if sale.payment_method == 'cash' %}
+                <ion-row>
+                    <ion-col size="12" size-md="6">
+                        <div class="mb-3">
+                            <ion-text color="medium" class="text-sm">{% trans "Importe Pagado" %}</ion-text>
+                            <p class="font-medium mt-1">{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ sale.amount_paid|floatformat:2 }}</p>
+                        </div>
+                    </ion-col>
+                    <ion-col size="12" size-md="6">
+                        <div class="mb-3">
+                            <ion-text color="medium" class="text-sm">{% trans "Cambio" %}</ion-text>
+                            <p class="font-medium mt-1">{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ sale.change_given|floatformat:2 }}</p>
+                        </div>
+                    </ion-col>
+                </ion-row>
+                {% endif %}
+            </ion-grid>
+        </ion-card-content>
+    </ion-card>
+
+    <!-- Sale Items Card -->
+    <ion-card>
+        <ion-card-header>
+            <ion-card-title>{% trans "Artículos" %}</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+            <ion-list class="p-0">
+                {% for item in items %}
+                <ion-item lines="full">
+                    <div class="w-full py-2">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <ion-text class="font-medium block">{{ item.product_name }}</ion-text>
+                                <ion-text color="medium" class="text-sm">SKU: {{ item.product_sku }}</ion-text>
+                            </div>
+                            <ion-text class="font-semibold">{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ item.line_total|floatformat:2 }}</ion-text>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <ion-text color="medium">
+                                {% trans "Cant:" %} {{ item.quantity }} × {% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ item.unit_price|floatformat:2 }}
+                                {% if item.discount_percent > 0 %}
+                                    <ion-chip color="success" class="ml-2">
+                                        <ion-label>-{{ item.discount_percent }}%</ion-label>
+                                    </ion-chip>
+                                {% endif %}
+                            </ion-text>
+                        </div>
+                    </div>
+                </ion-item>
+                {% endfor %}
+            </ion-list>
+        </ion-card-content>
+    </ion-card>
+
+    <!-- Totals Card -->
+    <ion-card color="secondary">
+        <ion-card-content>
+            <div class="space-y-2">
+                <div class="flex justify-between items-center">
+                    <ion-text class="font-medium">{% trans "Subtotal:" %}</ion-text>
+                    <ion-text class="font-medium">{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ sale.subtotal|floatformat:2 }}</ion-text>
+                </div>
+
+                {% if sale.discount_amount > 0 %}
+                <div class="flex justify-between items-center text-success">
+                    <ion-text class="font-medium">{% trans "Descuento:" %}</ion-text>
+                    <ion-text class="font-medium">-{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ sale.discount_amount|floatformat:2 }}</ion-text>
+                </div>
+                {% endif %}
+
+                {% if sale.tax_amount > 0 %}
+                <div class="flex justify-between items-center">
+                    <ion-text class="font-medium">{% trans "Impuestos:" %}</ion-text>
+                    <ion-text class="font-medium">{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ sale.tax_amount|floatformat:2 }}</ion-text>
+                </div>
+                {% endif %}
+
+                <ion-item lines="none" class="border-t border-gray-300 pt-2">
+                    <div class="flex justify-between items-center w-full">
+                        <ion-text class="text-lg font-bold">{% trans "Total:" %}</ion-text>
+                        <ion-text color="primary" class="text-2xl font-bold">{% if HUB_CONFIG.currency == 'EUR' %}€{% elif HUB_CONFIG.currency == 'GBP' %}£{% else %}${% endif %}{{ sale.total|floatformat:2 }}</ion-text>
+                    </div>
+                </ion-item>
+            </div>
+        </ion-card-content>
+    </ion-card>
+
+    <!-- Action Buttons -->
+    <ion-grid class="mt-4">
+        <ion-row>
+            <ion-col size="12" size-md="6">
+                <ion-button expand="block" fill="outline"
+                    hx-get="{% url 'sales:history' %}"
+                    hx-target="#dashboard-content"
+                    hx-push-url="true">
+                    <ion-icon slot="start" name="arrow-back-outline"></ion-icon>
+                    {% trans "Volver al Historial" %}
+                </ion-button>
+            </ion-col>
+            {% if sale.status == 'completed' %}
+            <ion-col size="12" size-md="6">
+                <ion-button expand="block" fill="outline" onclick="window.print()">
+                    <ion-icon slot="start" name="print-outline"></ion-icon>
+                    {% trans "Reimprimir Recibo" %}
+                </ion-button>
+            </ion-col>
+            {% endif %}
+        </ion-row>
+    </ion-grid>
+</div>

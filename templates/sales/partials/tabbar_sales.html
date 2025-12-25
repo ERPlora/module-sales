@@ -1,0 +1,45 @@
+{% load i18n %}
+
+<ion-tab-bar>
+    <ion-tab-button
+        hx-get="{% url 'sales:dashboard' %}"
+        hx-target="#dashboard-content"
+        hx-push-url="true"
+        class="{% if current_view == 'dashboard' %}tab-selected{% endif %}">
+        <ion-icon name="home-outline"></ion-icon>
+        <ion-label>{% trans "Inicio" %}</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button
+        href="{% url 'sales:pos' %}">
+        <ion-icon name="storefront-outline"></ion-icon>
+        <ion-label>{% trans "POS" %}</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button
+        hx-get="{% url 'sales:history' %}"
+        hx-target="#dashboard-content"
+        hx-push-url="true"
+        class="{% if current_view == 'history' %}tab-selected{% endif %}">
+        <ion-icon name="receipt-outline"></ion-icon>
+        <ion-label>{% trans "Historial" %}</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button
+        hx-get="{% url 'sales:reports' %}"
+        hx-target="#dashboard-content"
+        hx-push-url="true"
+        class="{% if current_view == 'reports' %}tab-selected{% endif %}">
+        <ion-icon name="bar-chart-outline"></ion-icon>
+        <ion-label>{% trans "Reportes" %}</ion-label>
+    </ion-tab-button>
+
+    <ion-tab-button
+        hx-get="{% url 'sales:settings' %}"
+        hx-target="#dashboard-content"
+        hx-push-url="true"
+        class="{% if current_view == 'settings' %}tab-selected{% endif %}">
+        <ion-icon name="settings-outline"></ion-icon>
+        <ion-label>{% trans "Config" %}</ion-label>
+    </ion-tab-button>
+</ion-tab-bar>
