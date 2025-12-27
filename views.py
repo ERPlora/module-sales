@@ -11,6 +11,7 @@ import json
 from .models import Sale, SaleItem, SalesConfig, ParkedTicket, ActiveCart
 from apps.configuration.models import HubConfig, StoreConfig
 from apps.accounts.decorators import login_required
+from apps.core.htmx import htmx_view
 
 # Import Product model from inventory plugin
 try:
@@ -29,6 +30,7 @@ except ImportError:
 
 @require_http_methods(["GET"])
 @login_required
+@htmx_view('sales/index.html', 'sales/partials/content.html')
 def dashboard(request):
     """Dashboard principal de ventas con estadísticas"""
     # Obtener configuración global del Hub
@@ -70,7 +72,7 @@ def dashboard(request):
                 'total': total
             }
 
-    context = {
+    return {
         'sales_count_today': sales_count_today,
         'sales_total_today': sales_total_today,
         'sales_count_week': sales_count_week,
@@ -79,12 +81,6 @@ def dashboard(request):
         'payment_methods_stats': payment_methods_stats,
         'currency': currency,  # Opcional, ya disponible en templates via context processor
     }
-
-    # Si es petición HTMX, devolver solo el contenido
-    if request.headers.get('HX-Request'):
-        return render(request, 'sales/partials/content.html', context)
-
-    return render(request, 'sales/index.html', context)
 
 
 @require_http_methods(["GET"])
@@ -248,6 +244,7 @@ def complete_sale(request):
 
 
 @require_http_methods(["GET"])
+@htmx_view('sales/history.html', 'sales/partials/history_content.html')
 def sales_history(request):
     """Vista de historial de ventas con DataTable"""
     # Filtrar ventas (optimizar con select_related para evitar N+1 queries)
@@ -288,20 +285,15 @@ def sales_history(request):
     paginator = Paginator(queryset, per_page)
     page_obj = paginator.get_page(request.GET.get('page', 1))
 
-    context = {
-        'page_obj': page_obj,
-    }
-
-    # Detectar si es una petición HTMX
+    # Si el target es #sales-table-container, devolver solo la tabla
     if request.headers.get('HX-Request'):
-        # Si el target es #sales-table-container, devolver solo la tabla
         hx_target = request.headers.get('HX-Target', '')
         if hx_target == 'sales-table-container':
-            return render(request, 'sales/partials/sales_table_partial.html', context)
-        # Si el target es #dashboard-content (navegación desde tabbar), devolver contenido completo
-        return render(request, 'sales/partials/history_content.html', context)
+            return render(request, 'sales/partials/sales_table_partial.html', {'page_obj': page_obj})
 
-    return render(request, 'sales/history.html', context)
+    return {
+        'page_obj': page_obj,
+    }
 
 
 @require_http_methods(["GET"])
@@ -336,25 +328,21 @@ def sales_list_ajax(request):
 
 
 @require_http_methods(["GET"])
+@htmx_view('sales/detail.html', 'sales/partials/detail_content.html')
 def sale_detail(request, sale_id):
     """Detalle de una venta"""
     sale = get_object_or_404(Sale.objects.select_related('user'), id=sale_id)
     items = sale.items.all()
 
-    context = {
+    return {
         'sale': sale,
         'items': items,
         'page_title': f'Venta {sale.sale_number}',
     }
 
-    # Si es petición HTMX, devolver solo el contenido
-    if request.headers.get('HX-Request'):
-        return render(request, 'sales/partials/detail_content.html', context)
-
-    return render(request, 'sales/detail.html', context)
-
 
 @require_http_methods(["GET"])
+@htmx_view('sales/reports.html', 'sales/partials/reports_content.html')
 def reports(request):
     """Vista de reportes"""
     today = timezone.now().date()
@@ -365,17 +353,11 @@ def reports(request):
         status=Sale.STATUS_COMPLETED
     )
 
-    context = {
+    return {
         'sales_count_week': sales_week.count(),
         'sales_total_week': sales_week.aggregate(Sum('total'))['total__sum'] or 0,
         'page_title': 'Sales Reports',
     }
-
-    # Si es petición HTMX, devolver solo el contenido
-    if request.headers.get('HX-Request'):
-        return render(request, 'sales/partials/reports_content.html', context)
-
-    return render(request, 'sales/reports.html', context)
 
 
 @require_http_methods(["GET"])
@@ -420,20 +402,15 @@ def reports_stats_ajax(request):
 
 @require_http_methods(["GET"])
 @login_required
+@htmx_view('sales/settings.html', 'sales/partials/settings_content.html')
 def settings_view(request):
     """Vista de configuración del módulo de ventas"""
     config = SalesConfig.get_config()
 
-    context = {
+    return {
         'config': config,
         'page_title': 'Sales Settings',
     }
-
-    # Si es petición HTMX, devolver solo el contenido
-    if request.headers.get('HX-Request'):
-        return render(request, 'sales/partials/settings_content.html', context)
-
-    return render(request, 'sales/settings.html', context)
 
 
 @require_http_methods(["POST"])
