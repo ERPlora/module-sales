@@ -11,7 +11,8 @@
     </ion-tab-button>
 
     <ion-tab-button
-        href="{% url 'sales:pos' %}">
+        href="{% url 'sales:pos' %}"
+        class="{% if current_view == 'pos' %}tab-selected{% endif %}">
         <ion-icon name="storefront-outline"></ion-icon>
         <ion-label>{% trans "POS" %}</ion-label>
     </ion-tab-button>
