@@ -1,7 +1,7 @@
 {% load i18n %}
 
-<tbody>
-    {% for sale in page_obj %}
+<tbody id="sales-tbody">
+    {% for sale in sales %}
     <tr class="border-b hover:bg-opacity-50" style="border-color: var(--ion-border-color);">
         <!-- Sale Number -->
         <td class="px-4 py-3 text-sm font-mono font-semibold">
