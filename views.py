@@ -244,13 +244,14 @@ def complete_sale(request):
 
 
 @require_http_methods(["GET"])
-@htmx_view('sales/history.html', 'sales/partials/history_content.html')
 def sales_history(request):
-    """Vista de historial de ventas con DataTable"""
+    """Vista de historial de ventas con infinite scroll"""
+    from apps.core.htmx import InfiniteScrollPaginator
+
     # Filtrar ventas (optimizar con select_related para evitar N+1 queries)
     queryset = Sale.objects.select_related('user').all()
 
-    # Búsqueda
+    # Busqueda
     search = request.GET.get('search', '').strip()
     if search:
         queryset = queryset.filter(
@@ -259,15 +260,15 @@ def sales_history(request):
         )
 
     # Filtros de fecha
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     if date_from:
         queryset = queryset.filter(created_at__date__gte=date_from)
     if date_to:
         queryset = queryset.filter(created_at__date__lte=date_to)
 
     # Filtro de estado
-    status = request.GET.get('status')
+    status = request.GET.get('status', '')
     if status:
         queryset = queryset.filter(status=status)
 
@@ -280,20 +281,38 @@ def sales_history(request):
     order_by = request.GET.get('order_by', '-created_at')
     queryset = queryset.order_by(order_by)
 
-    # Paginación
+    # Paginacion con infinite scroll
     per_page = int(request.GET.get('per_page', 25))
-    paginator = Paginator(queryset, per_page)
-    page_obj = paginator.get_page(request.GET.get('page', 1))
+    paginator = InfiniteScrollPaginator(queryset, per_page=per_page)
+    page_data = paginator.get_page(request.GET.get('page', 1))
 
-    # Si el target es #sales-table-container, devolver solo la tabla
-    if request.headers.get('HX-Request'):
-        hx_target = request.headers.get('HX-Target', '')
-        if hx_target == 'sales-table-container':
-            return render(request, 'sales/partials/sales_table_partial.html', {'page_obj': page_obj})
-
-    return {
-        'page_obj': page_obj,
+    context = {
+        'sales': page_data['items'],
+        'has_next': page_data['has_next'],
+        'next_page': page_data['next_page'],
+        'total_count': page_data['total_count'],
+        'page_number': page_data['page_number'],
+        'search': search,
+        'order_by': order_by,
+        'per_page': per_page,
+        'date_from': date_from,
+        'date_to': date_to,
+        'status_filter': status,
     }
+
+    # Determine which template to render
+    is_htmx = request.headers.get('HX-Request') or request.GET.get('partial') == 'true'
+    page_num = page_data['page_number']
+
+    if not is_htmx:
+        return render(request, 'sales/history.html', context)
+
+    if page_num > 1:
+        # Subsequent pages - only return table rows + loader
+        return render(request, 'sales/partials/sales_rows_infinite.html', context)
+
+    # First HTMX request - return full content partial
+    return render(request, 'sales/partials/history_content.html', context)
 
 
 @require_http_methods(["GET"])

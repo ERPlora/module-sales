@@ -1,9 +1,9 @@
 {% load i18n %}
 
-<!-- Partial usado para respuestas HTMX (tabla + paginación) -->
-<div class="overflow-x-auto">
+<!-- Partial usado para respuestas HTMX (tabla con infinite scroll) -->
+<div class="scroll-ios scroll-list" style="max-height: calc(100vh - 400px);">
     <table class="w-full">
-        <thead style="background: var(--ion-color-step-50);">
+        <thead style="background: var(--ion-color-step-50); position: sticky; top: 0; z-index: 10;">
             <tr>
                 <!-- Sale Number (sortable) -->
                 <th
@@ -11,13 +11,13 @@
                     style="color: var(--ion-color-medium);"
                     hx-get="{{ request.path }}"
                     hx-target="#sales-table-container"
-                    hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
-                    hx-vals='{"order_by": "{% if request.GET.order_by == \"sale_number\" %}-sale_number{% elif request.GET.order_by == \"-sale_number\" %}sale_number{% else %}-sale_number{% endif %}"}'
+                    hx-include="[name='search'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-vals='{"order_by": "{% if order_by == "sale_number" %}-sale_number{% elif order_by == "-sale_number" %}sale_number{% else %}-sale_number{% endif %}"}'
                     hx-push-url="true">
-                    {% trans "Nº Venta" %}
-                    {% if request.GET.order_by == "sale_number" %}
+                    {% trans "No Venta" %}
+                    {% if order_by == "sale_number" %}
                     <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
-                    {% elif request.GET.order_by == "-sale_number" %}
+                    {% elif order_by == "-sale_number" %}
                     <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
                     {% endif %}
                 </th>
@@ -28,13 +28,13 @@
                     style="color: var(--ion-color-medium);"
                     hx-get="{{ request.path }}"
                     hx-target="#sales-table-container"
-                    hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
-                    hx-vals='{"order_by": "{% if request.GET.order_by == \"created_at\" %}-created_at{% elif request.GET.order_by == \"-created_at\" %}created_at{% else %}-created_at{% endif %}"}'
+                    hx-include="[name='search'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-vals='{"order_by": "{% if order_by == "created_at" %}-created_at{% elif order_by == "-created_at" %}created_at{% else %}-created_at{% endif %}"}'
                     hx-push-url="true">
                     {% trans "Fecha" %}
-                    {% if request.GET.order_by == "created_at" %}
+                    {% if order_by == "created_at" %}
                     <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
-                    {% elif request.GET.order_by == "-created_at" %}
+                    {% elif order_by == "-created_at" %}
                     <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
                     {% endif %}
                 </th>
@@ -46,7 +46,7 @@
 
                 <!-- Payment Method -->
                 <th class="px-4 py-3 text-left text-sm font-medium" style="color: var(--ion-color-medium);">
-                    {% trans "Método de Pago" %}
+                    {% trans "Metodo de Pago" %}
                 </th>
 
                 <!-- Total (sortable) -->
@@ -55,13 +55,13 @@
                     style="color: var(--ion-color-medium);"
                     hx-get="{{ request.path }}"
                     hx-target="#sales-table-container"
-                    hx-include="[name='search'],[name='page'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
-                    hx-vals='{"order_by": "{% if request.GET.order_by == \"total\" %}-total{% elif request.GET.order_by == \"-total\" %}total{% else %}-total{% endif %}"}'
+                    hx-include="[name='search'],[name='per_page'],[name='date_from'],[name='date_to'],[name='status']"
+                    hx-vals='{"order_by": "{% if order_by == "total" %}-total{% elif order_by == "-total" %}total{% else %}-total{% endif %}"}'
                     hx-push-url="true">
                     {% trans "Total" %}
-                    {% if request.GET.order_by == "total" %}
+                    {% if order_by == "total" %}
                     <ion-icon name="chevron-up-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
-                    {% elif request.GET.order_by == "-total" %}
+                    {% elif order_by == "-total" %}
                     <ion-icon name="chevron-down-outline" style="font-size: 14px; vertical-align: middle;"></ion-icon>
                     {% endif %}
                 </th>
@@ -79,8 +79,22 @@
         </thead>
         {% include "sales/partials/sales_table_rows.html" %}
     </table>
-</div>
 
-<ion-card-content>
-    {% include "sales/partials/sales_pagination.html" %}
-</ion-card-content>
+    <!-- Infinite scroll trigger -->
+    {% if has_next %}
+    <div class="infinite-scroll-loader"
+         hx-get="{{ request.path }}?page={{ next_page }}{% if search %}&search={{ search }}{% endif %}{% if order_by %}&order_by={{ order_by }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}&per_page={{ per_page }}"
+         hx-trigger="revealed"
+         hx-target="#sales-tbody"
+         hx-swap="beforeend"
+         hx-select="#sales-tbody > tr, .infinite-scroll-loader, .infinite-scroll-end">
+        <ion-spinner name="crescent"></ion-spinner>
+    </div>
+    {% else %}
+    {% if total_count > 0 %}
+    <div class="infinite-scroll-end">
+        {% blocktrans count count=total_count %}{{ count }} sale{% plural %}{{ count }} sales{% endblocktrans %}
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
