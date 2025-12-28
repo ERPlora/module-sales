@@ -9,19 +9,36 @@
   "author_email": "support@erplora.com",
   "license": "MIT",
   "category": "pos",
-  "tags": ["pos", "sales", "point-of-sale", "retail", "transactions", "payments", "checkout"],
+  "industries": [
+    "retail",
+    "restaurant",
+    "bar",
+    "cafe",
+    "fast_food",
+    "hotel",
+    "salon",
+    "healthcare",
+    "fitness"
+  ],
+  "tags": [
+    "pos",
+    "sales",
+    "point-of-sale",
+    "transactions",
+    "payments",
+    "checkout"
+  ],
   "icon": "cart-outline",
-
   "dependencies": {
     "python": [],
-    "modules": ["inventory>=1.0.0"]
+    "modules": [
+      "inventory>=1.0.0"
+    ]
   },
-
   "compatibility": {
     "min_erplora_version": "1.0.0",
     "max_erplora_version": "2.0.0"
   },
-
   "menu": {
     "label": "Sales",
     "label_es": "Ventas",
@@ -29,7 +46,6 @@
     "url": "/modules/sales/",
     "order": 5
   },
-
   "permissions": [
     "sales.view_sale",
     "sales.add_sale",
